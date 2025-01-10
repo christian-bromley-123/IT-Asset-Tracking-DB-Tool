@@ -13,6 +13,7 @@
 #
 *.cfg
 LastDevice.txt
+*.ico
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

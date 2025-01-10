@@ -4,7 +4,10 @@
 
 #include "main.hpp"
 
-int main() {
+int main(int argc, char** argv) {
+
+	std::cout << argv[0] << std::endl;
+
 	/*
 	Main function used for entering the program.
 	*/
@@ -82,8 +85,8 @@ int main() {
 			default:
 				//if invalid input is entered
 				std::cout << "\nPlease select a valid option. \n" << std::endl;
-				std::cin.clear();
-				std::cin.ignore(10000, '\n');
+				//std::cin.clear();
+				//std::cin.ignore(10000, '\n');
 				break;
 
 		}
@@ -514,7 +517,6 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt) {
 
 	*/
 
-
 	//Allocate an environment
 
 	if (SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR)
@@ -522,7 +524,6 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt) {
 		fwprintf(stderr, L"Unable to allocate an environment handle\n");
 		exit(-1);
 	} 
-
 
 	//Register
 	SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
@@ -567,8 +568,6 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt) {
 		return -1;
 	}
 
-	
-
 	SQLRETURN stmtHandleReturn = SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
 
 	return 0;
@@ -584,7 +583,9 @@ std::wstring getConString(char dbChoice) {
 	std::wfstream file;
 
 	//Open the config file and populate the first two elements of the array
+
 	file.open("config.cfg", std::ios::in);
+
 	if (file.is_open()) {
 
 		for (int i = 0; i < 2; i++) {
