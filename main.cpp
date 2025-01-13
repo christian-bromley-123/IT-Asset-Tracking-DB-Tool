@@ -1,12 +1,23 @@
-// Copyright 2025 New Horizons. This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/. 
+/*
+	This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	*/
 
 // main.cpp : Defines the entry point for the application.
 
 #include "main.hpp"
 
-int main(int argc, char** argv) {
-
-	std::cout << argv[0] << std::endl;
+int main() {
 
 	/*
 	Main function used for entering the program.
@@ -21,15 +32,15 @@ int main(int argc, char** argv) {
 	}
 
 	// Prompt the user to choose a selection.
-	std::cout << "What would you like to do? \n" << std::endl;
-	std::cout << "Press 1 to assign a device to an employee. \n" << std::endl;
-	std::cout << "Press 2 to unassign a device. \n" << std::endl;
-	std::cout << "Press 3 to add a new device. \n" << std::endl;
-	std::cout << "Press 4 to add an employee. \n" << std::endl;
-	std::cout << "Press 5 to remove an employee.\n" << std::endl;
-	std::cout << "Press 6 to remove a device.\n" << std::endl;
-	std::cout << "Press 0 to read the last device entered.\n" << std::endl;
-	std::cout << std::endl << "Press q or Q to quit.\n" << std::endl;
+	std::cout << "What would you like to do?" << std::endl << std::endl;
+	std::cout << "Press 1 to assign a device to an employee." << std::endl << std::endl;
+	std::cout << "Press 2 to unassign a device." << std::endl << std::endl;
+	std::cout << "Press 3 to add a new device." << std::endl << std::endl;
+	std::cout << "Press 4 to add an employee." << std::endl << std::endl;
+	std::cout << "Press 5 to remove an employee." << std::endl << std::endl;
+	std::cout << "Press 6 to remove a device." << std::endl << std::endl;
+	std::cout << "Press 0 to read the last device entered." << std::endl << std::endl;
+	std::cout << std::endl << "Press q or Q to quit." << std::endl << std::endl;
 
 	while (!queryFinished) {
 		
@@ -84,9 +95,7 @@ int main(int argc, char** argv) {
 
 			default:
 				//if invalid input is entered
-				std::cout << "\nPlease select a valid option. \n" << std::endl;
-				//std::cin.clear();
-				//std::cin.ignore(10000, '\n');
+				std::cout << std::endl << "Please select a valid option." << std::endl << std::endl;
 				break;
 
 		}
@@ -97,25 +106,44 @@ int main(int argc, char** argv) {
 void assignDevice(SQLHSTMT hStmt) {
 	/*
 	Assigns an existing device to an employee. The device name and employee email address is provided by the user.
-
-	ADD ERROR CODES
 	*/
 
 
 	while (!endUnassignLoop) {
 
 		//Get the nhwsNumber and empoyeeEmailAddress from the user
-		std::cout << "\nPlease scan the NHWS# barcode on the device you would like to assign or enter it manually. Enter 'q' or 'Q' to stop." << std::endl;
+		std::cout << std::endl << "Please scan the NHWS# barcode on the device you would like to assign or enter it manually. Enter 'q' or 'Q' to stop." << std::endl;
 		std::wcin >> deviceNumber;
+
+		//clear error flags and stream buffer
+		std::wcin.clear();
+		std::wcin.ignore(10000, '\n');
 
 		if (deviceNumber == L"q" || deviceNumber == L"Q") {
 			endUnassignLoop = true;
 			break;
 		}
 
-		std::cout << "\nEmpoyee email address you would like to assign to device to. Enter 'q' or 'Q' to cancel." << std::endl;
+		// Bind parameter
+		SQLLEN strlen = SQL_NTS;
+		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		// Check that this device exists
+		std::wstring checkDevice = L"SELECT TOP (1) [Device_Name] FROM [Devices] WHERE Device_Name = ?";
+		SQLRETURN execResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDevice.c_str(), SQL_NTS);
+
+		std::wstring checkResult = getResult(hStmt, 1);
+
+		if (checkResult == L"-1") {
+			std::wcout << std::endl << L"Error. There is no device with the name: '" << deviceNumber << "'" << std::endl;
+		}
+
+		std::cout << std::endl << "Empoyee email address you would like to assign to device to. Enter 'q' or 'Q' to cancel." << std::endl;
 		std::wcin >> employeeEmailAddress;
 		
+		//clear error flags and stream buffer
+		std::wcin.clear();
+		std::wcin.ignore(10000, '\n');
 
  		if (deviceNumber == L"q" || deviceNumber == L"Q") {
 			endUnassignLoop = true;
@@ -126,9 +154,22 @@ void assignDevice(SQLHSTMT hStmt) {
 
 		employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
 
+		// Bind parameter
+		strlen = SQL_NTS;
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
+
+		// Check that this person exists
+		std::wstring checkEmployee = L"SELECT TOP (1) [Employee_Email] FROM [Employees] WHERE Employee_ID = ?";
+		execResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
+		checkResult = getResult(hStmt, 1);
+
+		if (checkResult == L"-1") {
+			std::wcout << L"\nError. There is no employee with the email address: '" << employeeEmailAddress << "'" << std::endl;
+		}
+
 		//Bind variables
-		SQLLEN strlen = SQL_NTS;
-		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1,SQL_PARAM_INPUT, SQL_C_WCHAR,SQL_WCHAR,100,0,(wchar_t*)employeeID.c_str(),0,&strlen);
+		strlen = SQL_NTS;
+		bindResult1 = SQLBindParameter(hStmt, 1,SQL_PARAM_INPUT, SQL_C_WCHAR,SQL_WCHAR,100,0,(wchar_t*)employeeID.c_str(),0,&strlen);
 		SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
 		//Generate Query
@@ -148,8 +189,6 @@ void unassignDevice(SQLHSTMT hStmt) {
 
 	/*
 	Runs the query to unassign a device from a user, freeing it.
-
-	ADD ERROR CODES
 	*/
 
 	while (!endUnassignLoop) {
@@ -157,13 +196,33 @@ void unassignDevice(SQLHSTMT hStmt) {
 		std::cout << "\nPlease scan the barcode on the device you would like to unassign or enter it using the keyboard. Enter 'q' or 'Q' to stop." << std::endl;
 		std::wcin >> deviceNumber;
 
-		//Binding nhwsNumber to the first parameter
+
+		if (deviceNumber == L"q" || deviceNumber == L"Q") {
+			endUnassignLoop = true;
+			break;
+		}
+
+		// Bind parameter
 		SQLLEN strlen = SQL_NTS;
+		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		// Check that this device exists
+		std::wstring checkDevice = L"SELECT TOP (1) [Device_Name] FROM [Devices] WHERE Device_Name = ?";
+		SQLRETURN execResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDevice.c_str(), SQL_NTS);
+		
+		std::wstring checkResult = getResult(hStmt, 1);
+
+		if (checkResult == L"-1") {
+			std::wcout << L"\nError. There is no device with the name: '" << deviceNumber << "'" << std::endl;
+		}
+
+
+		//Binding deviceNumber to the first parameter
+		strlen = SQL_NTS;
 
 		SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 		
 		std::wstring unassignDevice = L"UPDATE [Devices] SET Currently_Issued_To = NULL WHERE Device_Name = ?";
-
 
 		//Prepare and execute the query
 		SQLRETURN prepareResult = SQLPrepare(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
@@ -173,9 +232,7 @@ void unassignDevice(SQLHSTMT hStmt) {
 		//Free up the parameter for other functions
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
-		if (deviceNumber == L"q" || deviceNumber == L"Q") {
-			endUnassignLoop = true;
-		}
+		
 	}
 	return;
 }
@@ -405,6 +462,10 @@ void removeEmployee(SQLHSTMT hStmt) {
 		std::wstring employeeEmailAddress;
 		std::wcin >> employeeEmailAddress;
 
+		//clear error flags and stream buffer
+		std::wcin.clear();
+		std::wcin.ignore(10000, '\n');
+
 		// First, unassign all devices assigned to this person
 		employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
 
@@ -453,6 +514,16 @@ void removeDevice(SQLHSTMT hStmt) {
 		std::cout << "\nPlease scan the barcode on the device you would like to remove or enter its name using the keyboard. Enter 'q' or 'Q' to stop." << std::endl;
 		std::wcin >> deviceNumber;
 
+		//clear error flags and stream buffer
+		std::wcin.clear();
+		std::wcin.ignore(10000, '\n');
+
+		if (deviceNumber == L"q" || deviceNumber == L"Q") {
+			endUnassignLoop = true;
+			break;
+		}
+
+
 		//Binding deviceNumber to the first parameter
 		SQLLEN strlen = SQL_NTS;
 		SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
@@ -480,10 +551,7 @@ void removeDevice(SQLHSTMT hStmt) {
 		//Free up the parameter for other functions
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
-		if (deviceNumber == L"q" || deviceNumber == L"Q") {
-			endUnassignLoop = true;
-		}
-
+		
 	}
 	return;
 }
@@ -539,12 +607,9 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt) {
 	std::cin >> dbChoice;
 
 	if (dbChoice == 'C') {
-		std::cout << "Copyright 2025 New Horizons. This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/" << std::endl << std::endl;
+		std::cout << "This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with this program.If not, see <https://www.gnu.org/licenses/>." << std::endl << std::endl;
 
-		std::cin.clear();
-		std::cin.ignore(10000, '\n');;
-
-		std::cout << "ENTER '1' FOR TEST SERVER.ENTER '2' FOR LIVE SERVER." << std::endl;
+		std::cout << "ENTER '1' FOR TEST SERVER. ENTER '2' FOR LIVE SERVER." << std::endl;
 
 		std::cin >> dbChoice; //Fall through
 	}
