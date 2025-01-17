@@ -59,6 +59,7 @@ std::wstring deviceModelId;
 std::wstring currentlyIssuedTo;
 std::wstring inServiceDate;
 
+
 //Variables for emplyees
 std::wstring employeeName;
 std::wstring employeeTitle;

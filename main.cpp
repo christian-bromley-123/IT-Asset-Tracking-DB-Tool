@@ -18,7 +18,6 @@
 #include "main.hpp"
 
 int main() {
-
 	/*
 	Main function used for entering the program.
 	*/
@@ -31,19 +30,25 @@ int main() {
 		return -1;
 	}
 
-	// Prompt the user to choose a selection.
-	std::cout << "What would you like to do?" << std::endl << std::endl;
-	std::cout << "Press 1 to assign a device to an employee." << std::endl << std::endl;
-	std::cout << "Press 2 to unassign a device." << std::endl << std::endl;
-	std::cout << "Press 3 to add a new device." << std::endl << std::endl;
-	std::cout << "Press 4 to add an employee." << std::endl << std::endl;
-	std::cout << "Press 5 to remove an employee." << std::endl << std::endl;
-	std::cout << "Press 6 to remove a device." << std::endl << std::endl;
-	std::cout << "Press 0 to read the last device entered." << std::endl << std::endl;
-	std::cout << std::endl << "Press q or Q to quit." << std::endl << std::endl;
 
 	while (!queryFinished) {
-		
+		std::cout << std::endl;
+
+		// Prompt the user to choose a selection.
+		std::cout << "What would you like to do?" << std::endl << std::endl;
+		std::cout << "Press 1 to assign a device to an employee." << std::endl << std::endl;
+		std::cout << "Press 2 to unassign a device." << std::endl << std::endl;
+		std::cout << "Press 3 to add a new device." << std::endl << std::endl;
+		std::cout << "Press 4 to add an employee." << std::endl << std::endl;
+		std::cout << "Press 5 to remove an employee." << std::endl << std::endl;
+		std::cout << "Press 6 to remove a device." << std::endl << std::endl;
+		std::cout << "Press 0 to read the last device entered." << std::endl << std::endl;
+		std::cout << std::endl << "Press q or Q to quit." << std::endl << std::endl;
+
+		//clear error flags and stream buffer
+		std::cin.clear();
+		//std::cin.ignore(10000, '\n');
+
 		// User inputs selection
 		std::cin >> queryChoice;
 
@@ -52,37 +57,31 @@ int main() {
 
 			case '1':
 				assignDevice(hStmt);
-				queryFinished = true;
 				break;
 
 			case '2':
 				unassignDevice(hStmt);
-				queryFinished = true;
 				break;
 
 			case '3':
 				newDevice(hStmt);
-				queryFinished = true;
 				break;
-
 
 			case '4':
 				addEmployee(hStmt);
-				queryFinished = true;
 				break;
 
 			case '5':
 				removeEmployee(hStmt);
-				queryFinished = true;
 				break;
 
 			case '6':
 				removeDevice(hStmt);
-				queryFinished = true;
 				break;
 
 			case '0':
 				readLastDevice();
+				system("pause");
 				break;
 
 			case 'q':
@@ -109,10 +108,10 @@ void assignDevice(SQLHSTMT hStmt) {
 	*/
 
 
-	while (!endUnassignLoop) {
+	while (true) {
 
-		//Get the nhwsNumber and empoyeeEmailAddress from the user
-		std::cout << std::endl << "Please scan the NHWS# barcode on the device you would like to assign or enter it manually. Enter 'q' or 'Q' to stop." << std::endl;
+		//Get the deviceNumber and empoyeeEmailAddress from the user
+		std::cout << std::endl << "Please scan the device barcode on the device you would like to assign or enter it manually. Enter 'q' or 'Q' to stop." << std::endl;
 		std::wcin >> deviceNumber;
 
 		//clear error flags and stream buffer
@@ -120,7 +119,6 @@ void assignDevice(SQLHSTMT hStmt) {
 		std::wcin.ignore(10000, '\n');
 
 		if (deviceNumber == L"q" || deviceNumber == L"Q") {
-			endUnassignLoop = true;
 			break;
 		}
 
@@ -146,7 +144,6 @@ void assignDevice(SQLHSTMT hStmt) {
 		std::wcin.ignore(10000, '\n');
 
  		if (deviceNumber == L"q" || deviceNumber == L"Q") {
-			endUnassignLoop = true;
 			break;
 		}
 
@@ -169,7 +166,7 @@ void assignDevice(SQLHSTMT hStmt) {
 
 		//Bind variables
 		strlen = SQL_NTS;
-		bindResult1 = SQLBindParameter(hStmt, 1,SQL_PARAM_INPUT, SQL_C_WCHAR,SQL_WCHAR,100,0,(wchar_t*)employeeID.c_str(),0,&strlen);
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
 		SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
 		//Generate Query
@@ -191,14 +188,13 @@ void unassignDevice(SQLHSTMT hStmt) {
 	Runs the query to unassign a device from a user, freeing it.
 	*/
 
-	while (!endUnassignLoop) {
+	while (true) {
 
 		std::cout << "\nPlease scan the barcode on the device you would like to unassign or enter it using the keyboard. Enter 'q' or 'Q' to stop." << std::endl;
 		std::wcin >> deviceNumber;
 
 
 		if (deviceNumber == L"q" || deviceNumber == L"Q") {
-			endUnassignLoop = true;
 			break;
 		}
 
@@ -456,7 +452,7 @@ void removeEmployee(SQLHSTMT hStmt) {
 	PAUSE ON ERROR
 	*/
 
-	while (!endUnassignLoop) {
+	while (true) {
 
 		std::cout << "\nPlease enter the email address of the employee you would like to remove from the database. Enter 'q' or 'Q' to stop" << std::endl;
 		std::wstring employeeEmailAddress;
@@ -465,6 +461,11 @@ void removeEmployee(SQLHSTMT hStmt) {
 		//clear error flags and stream buffer
 		std::wcin.clear();
 		std::wcin.ignore(10000, '\n');
+
+		//Break if necessary
+		if (employeeEmailAddress == L"q" || employeeEmailAddress == L"Q") {
+			break;
+		}
 
 		// First, unassign all devices assigned to this person
 		employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
@@ -496,12 +497,8 @@ void removeEmployee(SQLHSTMT hStmt) {
 			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		}
 
-		if (employeeEmailAddress == L"q" || employeeEmailAddress == L"Q") {
-				endUnassignLoop = true;
-		}
-
-		return;
 	}
+	return;
 }
 
 void removeDevice(SQLHSTMT hStmt) {
@@ -509,7 +506,7 @@ void removeDevice(SQLHSTMT hStmt) {
 	Remove a device from the database. 
 	*/
 
-	while (!endUnassignLoop) {
+	while (true) {
 
 		std::cout << "\nPlease scan the barcode on the device you would like to remove or enter its name using the keyboard. Enter 'q' or 'Q' to stop." << std::endl;
 		std::wcin >> deviceNumber;
@@ -519,7 +516,6 @@ void removeDevice(SQLHSTMT hStmt) {
 		std::wcin.ignore(10000, '\n');
 
 		if (deviceNumber == L"q" || deviceNumber == L"Q") {
-			endUnassignLoop = true;
 			break;
 		}
 
@@ -630,6 +626,7 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt) {
 	else {
 		fwprintf(stderr, L"Connection failed.\n\n\n");
 		SQLRETURN diagResult = diagSQLError(SQL_HANDLE_DBC, hDbc);
+		system("pause");
 		return -1;
 	}
 
@@ -704,6 +701,8 @@ SQLRETURN diagSQLError(int sqlHandle, SQLHANDLE handle) {
 	std::wstring errorMessage(SQLMessagePtr, *textLengthPtr);
 
 	std::wcout << std::endl << errorMessage << L"\nError code : \n" << errorCode << std::endl;
+
+	system("pause");
 
 	return diagResult;
 }
