@@ -81,7 +81,7 @@ int main() {
 
 			case '0':
 				readLastDevice();
-				system("pause");
+				enterKey();
 				break;
 
 			case 'q':
@@ -343,6 +343,8 @@ void newDevice(SQLHSTMT hStmt) {
 				std::cout << "Please enter a valid selection ." << std::endl;
 			}
 		}
+		yesOrNo = 0;
+		return;
 	}
 	//Free up the parameter for other functions
 	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
@@ -467,7 +469,7 @@ void removeEmployee(SQLHSTMT hStmt) {
 			break;
 		}
 
-		// First, unassign all devices assigned to this person
+		// First, get the Employee ID
 		employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
 
 		// Bind parameter
@@ -475,28 +477,57 @@ void removeEmployee(SQLHSTMT hStmt) {
 		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
 
 		// Check that this person exists
-		std::wstring checkEmployee = L"SELECT TOP (1) [Employee_Email] FROM [Employees] WHERE Employee_ID = ?";
-		SQLRETURN execResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
-		std::wstring checkResult = getResult(hStmt, 1);
+		std::wstring checkEmployee = L"SELECT TOP (1) [Employee_Email], [Employee_Name], [Employee_Title], [Location_ID] FROM [Employees] WHERE Employee_ID = ?";
 
-		if (checkResult == L"-1") {
+		SQLRETURN execResult1 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
+		std::wstring getEmail = getResult(hStmt, 1);
+
+		SQLRETURN execResult2 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
+		std::wstring getName = getResult(hStmt, 2);
+
+		SQLRETURN execResult3 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
+		std::wstring getTitle = getResult(hStmt, 3);
+
+		SQLRETURN execResult4 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
+		std::wstring locationID = getResult(hStmt, 4);
+		std::wstring getLocation = getLocationFromID(hStmt, locationID);
+		
+		if (getEmail == L"-1") {
 			std::wcout << L"\nError. There is no employee with the email address: '" << employeeEmailAddress << "'" << std::endl;
 		}
-
+		
 		else {
-			// Remove device removal
+			//Confrim with user
+			wchar_t confirmChoice = '0';
+			while (true) {
+				std::wcout << std::endl << L"You are about to delete:" << std::endl;
+				std::wcout <<  getName << std::endl;
+				std::wcout <<  getTitle << std::endl;
+				std::wcout << getLocation << std::endl;
+
+				std::wcout << std::endl << L"Are you sure you want to remove this employee? (Y/N)" << std::endl;
+
+				std::wcin >> confirmChoice;
+
+				if (confirmChoice != L'Y' and confirmChoice != L'y') {
+					return;
+				}
+				break;
+			}
+
+			// Unassign device
 			std::wstring unassignAllDevices = L"UPDATE [Devices] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
 			SQLRETURN statementResult;
 			statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 
 			// Finally, remove the employee
 			std::wstring removeEmpQuery = L"DELETE FROM [Employees] WHERE Employee_ID = ?";
-			statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)removeEmpQuery.c_str(), SQL_NTS); // this cant be a const sqlwchar
+			statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)removeEmpQuery.c_str(), SQL_NTS);
 
 			// Unbind Parameter
 			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		}
-
+		
 	}
 	return;
 }
@@ -538,6 +569,20 @@ void removeDevice(SQLHSTMT hStmt) {
 		}
 
 		else {
+			//Confrim with user
+			wchar_t confirmChoice = '0';
+			while (true) {
+
+				std::wcout << std::endl << L"Are you sure you want to remove this device? (Y/N)" << std::endl;
+
+				std::wcin >> confirmChoice;
+
+				if (confirmChoice != L'Y' and confirmChoice != L'y') {
+					return;
+				}
+				break;
+			}
+
 			//Delete the device
 			std::wstring unassignDevice = L"DELETE FROM [Devices] WHERE Device_Name = ?";
 			SQLRETURN deleteResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
@@ -546,7 +591,6 @@ void removeDevice(SQLHSTMT hStmt) {
 
 		//Free up the parameter for other functions
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
-
 		
 	}
 	return;
@@ -626,7 +670,7 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt) {
 	else {
 		fwprintf(stderr, L"Connection failed.\n\n\n");
 		SQLRETURN diagResult = diagSQLError(SQL_HANDLE_DBC, hDbc);
-		system("pause");
+		enterKey();
 		return -1;
 	}
 
@@ -702,7 +746,7 @@ SQLRETURN diagSQLError(int sqlHandle, SQLHANDLE handle) {
 
 	std::wcout << std::endl << errorMessage << L"\nError code : \n" << errorCode << std::endl;
 
-	system("pause");
+	enterKey();
 
 	return diagResult;
 }
@@ -731,6 +775,26 @@ std::wstring getIdFromEmail(SQLHANDLE handle, std::wstring employeeEmail) {
 	std::wstring idString = getResult(hStmt, 1);
 
 	return idString;
+}
+
+std::wstring getLocationFromID(SQLHANDLE handle, std::wstring locationID) {
+	// Bind Location ID to param 1
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)locationID.c_str(), 0, &strlen);
+
+	std::wstring getIdQuery = L"SELECT TOP (1) [Location_Name] FROM Locations WHERE Location_ID = ?";
+
+	// Execute the query
+	SQLRETURN statementResult;
+	statementResult = SQLExecDirect(handle, (SQLWCHAR*)getIdQuery.c_str(), SQL_NTS);
+
+	if (statementResult != 0 and statementResult != 1) {
+		diagSQLError(SQL_HANDLE_STMT, hStmt);
+	}
+
+	std::wstring locationName = getResult(hStmt, 1);
+
+	return locationName;
 }
 
 std::wstring getResult(SQLHANDLE handle, int column) {
@@ -768,4 +832,15 @@ std::wstring getResult(SQLHANDLE handle, int column) {
 	SQLCloseCursor(handle);
 
 	return getResultString;
+}
+
+void enterKey() {
+	char key;
+	std::cout << "Enter any character to continue" << std::endl;
+	while (true) {
+		std::cin >> key;
+		std::cout << std::endl;
+		break;
+	}
+	return;
 }
