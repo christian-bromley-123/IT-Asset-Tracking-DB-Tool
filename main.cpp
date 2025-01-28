@@ -109,31 +109,46 @@ void assignDevice(SQLHSTMT hStmt) {
 
 
 	while (true) {
+		SQLLEN strlen = SQL_NTS;
+		SQLRETURN bindResult1;
+		SQLRETURN execResult;
+		std::wstring checkResult;
 
-		//Get the deviceNumber and empoyeeEmailAddress from the user
-		std::cout << std::endl << "Please scan the device barcode on the device you would like to assign or enter it manually. Enter 'q' or 'Q' to stop." << std::endl;
-		std::wcin >> deviceNumber;
+		while (true) {
+			//Get the deviceNumber and empoyeeEmailAddress from the user
+			std::cout << std::endl << "Please scan the device barcode on the device you would like to assign or enter it manually. Enter 'q' or 'Q' to stop." << std::endl;
+			std::wcin >> deviceNumber;
 
-		//clear error flags and stream buffer
-		std::wcin.clear();
-		std::wcin.ignore(10000, '\n');
+			//clear error flags and stream buffer
+			std::wcin.clear();
+			std::wcin.ignore(10000, '\n');
+
+			if (deviceNumber == L"q" || deviceNumber == L"Q") {
+				break;
+			}
+
+			// Bind parameter
+			
+			bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+			// Check that this device exists
+			std::wstring checkDevice = L"SELECT TOP (1) [Device_Name] FROM [Devices] WHERE Device_Name = ?";
+			execResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDevice.c_str(), SQL_NTS);
+			//diagSQLError(SQL_HANDLE_STMT, hStmt);
+
+			checkResult = getResult(hStmt, 1);
+
+			if (checkResult == L"-1") {
+				std::wcout << std::endl << L"Error. There is no device with the name: '" << deviceNumber << "'" << std::endl;
+			}
+
+			else {
+				break;
+			}
+		}
 
 		if (deviceNumber == L"q" || deviceNumber == L"Q") {
 			break;
-		}
-
-		// Bind parameter
-		SQLLEN strlen = SQL_NTS;
-		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
-
-		// Check that this device exists
-		std::wstring checkDevice = L"SELECT TOP (1) [Device_Name] FROM [Devices] WHERE Device_Name = ?";
-		SQLRETURN execResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDevice.c_str(), SQL_NTS);
-
-		std::wstring checkResult = getResult(hStmt, 1);
-
-		if (checkResult == L"-1") {
-			std::wcout << std::endl << L"Error. There is no device with the name: '" << deviceNumber << "'" << std::endl;
 		}
 
 		std::cout << std::endl << "Empoyee email address you would like to assign to device to. Enter 'q' or 'Q' to cancel." << std::endl;
@@ -143,7 +158,7 @@ void assignDevice(SQLHSTMT hStmt) {
 		std::wcin.clear();
 		std::wcin.ignore(10000, '\n');
 
- 		if (deviceNumber == L"q" || deviceNumber == L"Q") {
+ 		if (employeeEmailAddress == L"q" || employeeEmailAddress == L"Q") {
 			break;
 		}
 
@@ -176,6 +191,24 @@ void assignDevice(SQLHSTMT hStmt) {
 		SQLRETURN statementResult;
 		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)assignDeviceQuery.c_str(), SQL_NTS);
 
+
+		//Rebind
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		// Check query result
+		std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Devices] WHERE Device_Name = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+
+		std::wstring checkExecResult = getResult(hStmt, 1);
+
+		if (checkExecResult == employeeID) {
+			std::cout << std::endl << "SUCCESS." << std::endl << std::endl;
+		}
+
+		else {
+			std::cout << std::endl << "FAILED" << std::endl << std::endl;
+		}
+		
 		//Free up the parameter for other functions
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 	}
@@ -820,12 +853,8 @@ std::wstring getResult(SQLHANDLE handle, int column) {
 
 	// Return an error
 	if (getResult == -1) {
+		SQLCloseCursor(handle);
 		return L"-1";
-	}
-
-	//Handle errors
-	if (getResult != 0 and getResult != 1) {
-		getResultError = diagSQLError(SQL_HANDLE_STMT, handle);
 	}
 
 	//Close cursor so that more queries can run
