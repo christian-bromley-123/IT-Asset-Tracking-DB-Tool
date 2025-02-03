@@ -42,7 +42,7 @@ int main() {
 		std::cout << "Press 4 to add an employee." << std::endl << std::endl;
 		std::cout << "Press 5 to remove an employee." << std::endl << std::endl;
 		std::cout << "Press 6 to remove a device." << std::endl << std::endl;
-		std::cout << "Press 0 to read the last device entered." << std::endl << std::endl;
+		//std::cout << "Press 0 to read the last device entered." << std::endl << std::endl;
 		std::cout << std::endl << "Press q or Q to quit." << std::endl << std::endl;
 
 		//clear error flags and stream buffer
@@ -78,12 +78,12 @@ int main() {
 			case '6':
 				removeDevice(hStmt);
 				break;
-
+				/* Currently locked due to not functioning in a desireable manner
 			case '0':
 				readLastDevice();
 				enterKey();
 				break;
-
+				*/
 			case 'q':
 				queryFinished = true;
 				break;
@@ -258,6 +258,26 @@ void unassignDevice(SQLHSTMT hStmt) {
 
 		SQLRETURN statementResult = SQLExecute(hStmt);
 
+		//Rebind
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		// Check query result
+		std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Devices] WHERE Device_Name = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+
+		std::wstring checkExecResult = getResult(hStmt, 1);
+
+		std::wstring nullString = L"";
+		nullString.resize(64);
+
+		if (checkExecResult == nullString) {
+			std::cout << std::endl << "SUCCESS." << std::endl << std::endl;
+		}
+
+		else {
+			std::cout << std::endl << "FAILED" << std::endl << std::endl;
+		}
+
 		//Free up the parameter for other functions
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
@@ -272,7 +292,7 @@ void newDevice(SQLHSTMT hStmt) {
 	it will be issued.
 	*/
 
-
+	SQLLEN strlen = SQL_NTS;
 	//Run this loop until the user is satisfied.
 	while (yesOrNo != 'y' && yesOrNo != 'Y') {
 		//reset yesOrNo so that the loop will come back around
@@ -322,14 +342,13 @@ void newDevice(SQLHSTMT hStmt) {
 		std::wcout << inServiceDate << std::endl;
 
 		//Confirm before proceeding
-		while (yesOrNo != 'y' && yesOrNo != 'Y' && yesOrNo != 'n' && yesOrNo != 'N') {
+		while (true) {
 			std::cout << "(Y/N)" << std::endl;
 
 			std::cin >> yesOrNo;
 			if (yesOrNo == 'y' || yesOrNo == 'Y') {
 
 				//Bind parameters
-				SQLLEN strlen = SQL_NTS;
 				SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 				SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialTag.c_str(), 0, &strlen);
 				SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
@@ -365,23 +384,52 @@ void newDevice(SQLHSTMT hStmt) {
 
 				//Free parameters
 				SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
-
-				writeLastDevice(deviceNumber);
+				break;
 
 			}
 			else if (yesOrNo == 'n' || yesOrNo == 'N') {
 				std::cout << "Please try again." << std::endl;
+				break;
 			}
 			else {
 				std::cout << "Please enter a valid selection ." << std::endl;
+				break;
 			}
 		}
-		yesOrNo = 0;
-		return;
 	}
+
+	// Check query result
+	
+	SQLRETURN bindName = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+	std::wstring statementResult;
+	std::wstring checkExecResultQuery = L"SELECT TOP (1) [Device_Name] FROM [Devices] WHERE Device_Name = ?";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkExecResult = getResult(hStmt, 1);
+
+	std::wstring nullString = L"";
+	nullString.resize(64);
+
+	// COPY 
+	std::wstring deviceNumberFromDB = deviceNumber;
+
+	deviceNumberFromDB.resize(64);
+
+
+	if (checkExecResult == deviceNumberFromDB) {
+		std::cout << std::endl << "SUCCESS." << std::endl << std::endl;
+		writeLastDevice(deviceNumber);
+	}
+
+	else {
+		std::cout << std::endl << "FAILED" << std::endl << std::endl;
+	}
+
 	//Free up the parameter for other functions
 	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
-
+	yesOrNo = 0;
 	return;
 }
 
