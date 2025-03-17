@@ -42,25 +42,26 @@
 
 #define SQL_QUERY_SIZE      1000 // Max. Num characters for SQL Query passed in.
 
-//Start variables
-char queryChoice;
-char dbChoice;
-
-
-// Connection constants
+// Connection
 SQLHENV     hEnv = NULL;			// Environment handle
 SQLHDBC     hDbc = NULL;			// Connection handle
 SQLHSTMT    hStmt = NULL;			// Statement handle
+
+bool isTestServer;
 
 //Variables for Device
 std::wstring deviceNumber;
 std::wstring serialTag;
 std::wstring deviceModelId;
 std::wstring currentlyIssuedTo;
-std::wstring inServiceDate;
+std::wstring purchaseDate;
+std::wstring deviceCost;
+std::wstring issueDate;
+std::wstring firstUser;
+std::wstring operatingSystem;
 
 
-//Variables for emplyees
+//Variables for employees
 std::wstring employeeName;
 std::wstring employeeTitle;
 std::wstring employeeLocation;
@@ -71,7 +72,6 @@ std::wstring employeeID;
 
 //Loop breakers
 char yesOrNo;
-bool queryFinished;
 bool endUnassignLoop;
 int checkVar;
 
@@ -91,3 +91,4 @@ SQLRETURN diagSQLError(int sqlHandle, SQLHANDLE handle);
 std::wstring getIdFromEmail(SQLHANDLE handle, std::wstring employeeEmail);
 std::wstring getLocationFromID(SQLHANDLE handle, std::wstring locationID);
 std::wstring getResult(SQLHANDLE handle, int column);
+
