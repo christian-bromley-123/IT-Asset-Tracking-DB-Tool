@@ -127,11 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="DBFunctions.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="DBFunctions.hpp" />
+    <ClInclude Include="include\DBFunctions.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -139,6 +135,10 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\Untitled (1).ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\DBFunctions.cpp" />
+    <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

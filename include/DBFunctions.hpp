@@ -40,53 +40,19 @@
 
 #define         SQL_QUERY_SIZE      1000 // Max. Num characters for SQL Query passed in.
 
-// Connection
-extern SQLHENV         hEnv;			// Environment handle
-extern SQLHDBC         hDbc;			// Connection handle
-extern SQLHSTMT        hStmt;			// Statement handle
-
-extern bool            isTestServer;
-
-//Variables for Device
-extern std::wstring    deviceNumber;
-extern std::wstring    serialTag;
-extern std::wstring    deviceModelId;
-extern std::wstring    currentlyIssuedTo;
-extern std::wstring    purchaseDate;
-extern std::wstring    deviceCost;
-extern std::wstring    issueDate;
-extern std::wstring    firstUser;
-extern std::wstring    operatingSystem;
-
-
-//Variables for employees
-extern std::wstring    employeeName;
-extern std::wstring    employeeTitle;
-extern std::wstring    employeeLocation;
-extern std::wstring    employeeEmailAddress;
-extern std::wstring    employeePhoneNumber;
-extern std::wstring    employeeExtension;
-extern std::wstring    employeeID;
-
-//Loop breakers
-extern char            yesOrNo;
-extern bool            endUnassignLoop;
-extern int             checkVar;
-
-//Functions
-std::wstring    getConString(char dbChoice);
-void            newDevice(SQLHSTMT hStmt);
-void            assignDevice(SQLHSTMT hStmt);
-void            unassignDevice(SQLHSTMT hStmt);
-void            addEmployee(SQLHSTMT hStmt);
-void            removeEmployee(SQLHSTMT hStmt);
-void            removeDevice(SQLHSTMT hStmt);
-void            writeLastDevice(std::wstring nhwsNumber);
+std::wstring    getConString(char dbChoice, bool &isTestServer);
+int             newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag, std::wstring deviceModelId, std::wstring purchaseDate, std::wstring deviceCost, std::wstring operatingSystem, bool isTestServer);
+int             assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring employeeEmailAddress, std::wstring issueDate, std::wstring firstUser);
+int             unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber);
+int             addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employeeTitle, std::wstring employeeLocation, std::wstring employeeEmailAddress, std::wstring employeePhoneNumber, std::wstring employeeExtension);
+int             removeEmployee(SQLHSTMT hStmt, std::wstring employeeID);
+int             removeDevice(SQLHSTMT hStmt, std::wstring deviceNumber);
+void            writeLastDevice(std::wstring deviceNumber);
 void            readLastDevice();
 void            enterKey();
-int             connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt);
+int             connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, bool& isTestServer);
 SQLRETURN       diagSQLError(int sqlHandle, SQLHANDLE handle);
 std::wstring    getIdFromEmail(SQLHANDLE handle, std::wstring employeeEmail);
 std::wstring    getLocationFromID(SQLHANDLE handle, std::wstring locationID);
 std::wstring    getResult(SQLHANDLE handle, int column);
-
+bool            checkValid(SQLHANDLE handle, std::wstring table, std::wstring column, std::wstring param, std::wstring target);
