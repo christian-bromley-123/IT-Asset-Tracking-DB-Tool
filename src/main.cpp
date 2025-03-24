@@ -15,7 +15,7 @@
 
 // main.cpp : Defines the entry point for the application.
 
-#include "DBFunctions.hpp"
+#include "..\include\DBFunctions.hpp"
 
 int main()
 {
