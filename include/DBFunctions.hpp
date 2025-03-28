@@ -50,7 +50,7 @@ int             removeDevice(SQLHSTMT hStmt, std::wstring deviceNumber);
 void            writeLastDevice(std::wstring deviceNumber);
 void            readLastDevice();
 void            enterKey();
-int             connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, bool& isTestServer);
+int             connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, char dbChoice, bool& isTestServer);
 SQLRETURN       diagSQLError(int sqlHandle, SQLHANDLE handle);
 std::wstring    getIdFromEmail(SQLHANDLE handle, std::wstring employeeEmail);
 std::wstring    getLocationFromID(SQLHANDLE handle, std::wstring locationID);

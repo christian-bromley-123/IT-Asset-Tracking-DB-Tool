@@ -25,18 +25,38 @@ int main()
 
 	*/
 
+	
+	//Run the connect database function.
+	std::cout << "ENTER '1' FOR TEST SERVER. ENTER '2' FOR LIVE SERVER. FOR COPYRIGHT AND LICENSE INFORMATION ENTER 'C'." << std::endl;
+	char dbChoice;
+	std::cin >> dbChoice;
+
+	if (dbChoice == 'C' or dbChoice == 'c') 
+	{
+		std::cout << "This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with this program.If not, see <https://www.gnu.org/licenses/>." << std::endl << std::endl;
+		std::cout << "ENTER '1' FOR TEST SERVER. ENTER '2' FOR LIVE SERVER." << std::endl;
+		std::cin >> dbChoice;
+	}
+
+	bool isTestServer = true;
 	SQLHENV  hEnv = NULL;
 	SQLHDBC  hDbc = NULL;
 	SQLHSTMT hStmt = NULL;
+	//Get Connection string from config
 
-	bool isTestServer = true;
-
-	//Run the connect database function.
-	int connectResult = connectDatabase(hEnv, hDbc, hStmt, isTestServer);
+	int connectResult = connectDatabase(hEnv, hDbc, hStmt, dbChoice, isTestServer);
 
 	// End the program if the connection fails
-	if (connectResult != 0) {
+	if (connectResult != 0) 
+	{
+		std::cout << "ERROR: DATABSE COULD NOT CONNECT." << std::endl;
+		enterKey();
 		return -1;
+	}
+
+	else 
+	{
+		std::cout << std::endl << "Connection established." << std::endl << std::endl;
 	}
 
 	// Main loop of the program. When this loop is broken, the program will exit.
@@ -226,7 +246,7 @@ int main()
 					else {
 						std::cout << std::endl << "FAILED." << std::endl << std::endl;
 					}
-					break;
+					
 				}
 
 				else
@@ -473,7 +493,7 @@ int main()
 				std::wstring locationID = getResult(hStmt, 4);
 				std::wstring getLocation = getLocationFromID(hStmt, locationID);
 
-				if (getEmail == L"-1") {
+				if (getEmail == L"") {
 					std::wcout << L"\nError. There is no employee with the email address: '" << employeeEmailAddress << "'" << std::endl;
 				}
 

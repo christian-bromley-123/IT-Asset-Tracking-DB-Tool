@@ -14,6 +14,7 @@
 	*/
 
 #include "..\include\DBFunctions.hpp"
+#include <wchar.h>
 
 int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employeeEmailAddress, std::wstring issueDate, std::wstring firstUser) {
 	/*
@@ -71,9 +72,6 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 		std::wstring dateFromDB = issueDate;
 		std::wstring newBoolFromDB = firstUser;
 
-		dateFromDB.resize(64);
-		newBoolFromDB.resize(64);
-
 		if (checkUserResult == employeeID && checkDateResult == dateFromDB && checkNewResult == newBoolFromDB) {
 			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 			return 0;
@@ -116,7 +114,6 @@ int unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
 	std::wstring checkExecResult = getResult(hStmt, 1);
 
 	std::wstring nullString = L"";
-	nullString.resize(64);
 
 	if (checkExecResult == nullString) {
 		return 0;
@@ -129,7 +126,6 @@ int unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
 		
 	}
 
-	return 0;
 }
 
 int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag, std::wstring deviceModelId, std::wstring purchaseDate, std::wstring deviceCost, std::wstring operatingSystem, bool isTestServer) {
@@ -203,9 +199,6 @@ int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag,
 	// Copy and reformat values to compare against
 	std::wstring deviceNumberFromDB = deviceNumber;
 	std::wstring deviceSerialFromDB = serialTag;
-
-	deviceNumberFromDB.resize(64);
-	deviceSerialFromDB.resize(64);
 
 
 	if (checkName == deviceNumberFromDB && checkTag == deviceSerialFromDB) {
@@ -399,7 +392,7 @@ void readLastDevice() {
 	return;
 }
 
-int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, bool& isTestServer) {
+int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, char dbChoice, bool& isTestServer) {
 	/*
 
 		 Connects the application to the database. THe connection string is read from config.cfg.
@@ -423,36 +416,11 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, bool& isTestS
 
 	SQLRETURN result;
 
-	//Get Connection string from config
-	std::cout << "ENTER '1' FOR TEST SERVER. ENTER '2' FOR LIVE SERVER. FOR COPYRIGHT AND LICENSE INFORMATION ENTER 'C'." << std::endl;
-	char dbChoice;
-	std::cin >> dbChoice;
-
-	if (dbChoice == 'C') {
-		std::cout << "This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with this program.If not, see <https://www.gnu.org/licenses/>." << std::endl << std::endl;
-
-		std::cout << "ENTER '1' FOR TEST SERVER. ENTER '2' FOR LIVE SERVER." << std::endl;
-
-		std::cin >> dbChoice;
-	}
-
 	std::wstring connectionString = getConString(dbChoice, isTestServer);
 
 	result = SQLDriverConnect(hDbc, NULL, (SQLWCHAR*)connectionString.c_str(), SQL_NTS, NULL, 1, NULL, SQL_DRIVER_COMPLETE);
 
-	if (result == SQL_SUCCESS) {
-		fwprintf(stderr, L"Connection Established.\n\n\n");
-
-
-	}
-	else if (result == SQL_SUCCESS_WITH_INFO) {
-		fwprintf(stderr, L"Connection Established.\n\n\n");
-
-	}
-	else {
-		fwprintf(stderr, L"Connection failed.\n\n\n");
-		SQLRETURN diagResult = diagSQLError(SQL_HANDLE_DBC, hDbc);
-		enterKey();
+	if (result != 0 and result != 1) {
 		return -1;
 	}
 
@@ -608,19 +576,16 @@ std::wstring getResult(SQLHANDLE hStmt, int column) {
 	//Set string buffer
 	getResultString.resize(64);
 	SQLLEN stringLength = 64;
-	SQLLEN* stringLengthPtr = &stringLength;
 
 	// Get the data in the column passed to the function
-	getResult = SQLGetData(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), getResultString.size(), stringLengthPtr);
-
-	// Return an error
-	if (getResult == -1) {
-		SQLCloseCursor(hStmt);
-		return L"-1";
-	}
+	getResult = SQLGetData(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), getResultString.size(), &stringLength);
 
 	//Close cursor so that more queries can run
 	SQLCloseCursor(hStmt);
+
+	//Resize result
+	stringLength = wcslen(getResultString.data());
+	getResultString.resize(stringLength);
 
 	return getResultString;
 }
@@ -660,7 +625,7 @@ bool checkValid(SQLHANDLE hStmt, std::wstring table, std::wstring column, std::w
 
 	checkResult = getResult(hStmt, 1);
 
-	if (checkResult == L"-1") {
+	if (checkResult == L"") {
 		return false;
 	}
 
