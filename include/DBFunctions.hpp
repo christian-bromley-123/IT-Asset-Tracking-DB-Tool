@@ -18,24 +18,12 @@
 
 #pragma once
 
-//Libraries
-#include <iostream>
+
 #include <string>
-#include <algorithm>
-#include <stdexcept>
-#include <cassert>
-#include <cstring>
-#include <fstream>
-#include <filesystem>
 
 #include <windows.h>
 #include <sql.h>
 #include <sqlext.h>
-#include <stdio.h>
-#include <conio.h>
-#include <tchar.h>
-#include <stdlib.h>
-#include <sal.h>
 
 
 #define         SQL_QUERY_SIZE      1000 // Max. Num characters for SQL Query passed in.
@@ -54,5 +42,7 @@ int             connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, c
 SQLRETURN       diagSQLError(int sqlHandle, SQLHANDLE handle);
 std::wstring    getIdFromEmail(SQLHANDLE handle, std::wstring employeeEmail);
 std::wstring    getLocationFromID(SQLHANDLE handle, std::wstring locationID);
+std::wstring    getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName);
 std::wstring    getResult(SQLHANDLE handle, int column);
 bool            checkValid(SQLHANDLE handle, std::wstring table, std::wstring column, std::wstring param, std::wstring target);
+bool            isValidDate(std::wstring date);

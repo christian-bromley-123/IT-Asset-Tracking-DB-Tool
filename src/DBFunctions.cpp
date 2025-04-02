@@ -13,8 +13,15 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	*/
 
+
 #include "..\include\DBFunctions.hpp"
 #include <wchar.h>
+#include <iostream>
+#include <cstring>
+#include <fstream>
+#include <filesystem>
+
+
 
 int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employeeEmailAddress, std::wstring issueDate, std::wstring firstUser) {
 	/*
@@ -23,8 +30,17 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 
 	*/
 
+	// Verify inputs
+	bool dateValid = isValidDate(issueDate);
 
-	while (true) {
+	if (!dateValid)
+	{
+		return -1;
+	}
+
+
+	while (true) 
+	{
 		// Get employee ID from email
 		std::wstring employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
 
@@ -135,6 +151,14 @@ int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag,
 		it will be issued.
 
 	*/
+
+	// Verify inputs
+	bool dateValid = isValidDate(purchaseDate);
+
+	if (!dateValid)
+	{
+		return -1;
+	}
 
 
 	//Bind parameters
@@ -541,13 +565,13 @@ std::wstring getLocationFromID(SQLHANDLE hStmt, std::wstring locationID) {
 
 	// Bind Location ID to param 1
 	SQLLEN strlen = SQL_NTS;
-	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)locationID.c_str(), 0, &strlen);
+	SQLRETURN bindResult;
+	bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)locationID.c_str(), 0, &strlen);
 
 	std::wstring getIdQuery = L"SELECT TOP (1) [Location_Name] FROM Locations WHERE Location_ID = ?";
 
 	// Execute the query
-	SQLRETURN statementResult;
-	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getIdQuery.c_str(), SQL_NTS);
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getIdQuery.c_str(), SQL_NTS);
 
 	if (statementResult != 0 and statementResult != 1) {
 		diagSQLError(SQL_HANDLE_STMT, hStmt);
@@ -556,6 +580,26 @@ std::wstring getLocationFromID(SQLHANDLE hStmt, std::wstring locationID) {
 	std::wstring locationName = getResult(hStmt, 1);
 
 	return locationName;
+}
+
+std::wstring getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName) {
+	/* 
+		Function to return the location ID given the name of the location.
+	*/
+
+	SQLLEN strlen = SQL_NTS;
+
+	// Bind LocationName to param 1
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)locationName.c_str(), 0, &strlen);
+
+	std::wstring getLocationQuery = L"SELECT TOP (1) [Location_ID] FROM Locations WHERE Location_Name = ?";
+
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getLocationQuery.c_str(), SQL_NTS);
+
+	std::wstring locationID = getResult(hStmt, 1);
+
+	return locationID;
+
 }
 
 std::wstring getResult(SQLHANDLE hStmt, int column) {
@@ -633,5 +677,97 @@ bool checkValid(SQLHANDLE hStmt, std::wstring table, std::wstring column, std::w
 		return true;
 	}
 
+}
+
+bool isValidDate(std::wstring date) 
+{
+
+	// First check the length, it should be 8 characters every time.
+	if (date.length() != 8)
+	{
+		return false;
+	}
+
+	// Check to make sure the day, month, and year are delimited by slashes
+	if (date[2] != L'/' or date[5] != L'/')
+	{
+		return false;
+	}
+
+	// cut up string into day month and year to check them individually
+	std::wstring month = date.substr(0, 2);
+	std::wstring day = date.substr(3, 2);
+	std::wstring year = date.substr(6, 2);
+
+	// Convert days, months, and years to numbers for comparison
+	wchar_t* monthEnd;
+	wchar_t* dayEnd;
+	wchar_t* yearEnd;
+
+	int monthInt = wcstol((wchar_t*)month.c_str(), &monthEnd, 10);
+	int dayInt = wcstol((wchar_t*)day.c_str(), &dayEnd, 10);
+	int yearInt = wcstol((wchar_t*)year.c_str(), &yearEnd, 10);
+
+	if (monthInt > 12 or monthInt < 1)
+	{
+		return false;
+	}
+
+	if (monthInt == 4 || monthInt == 6 || monthInt == 9 || monthInt == 11)
+	{
+		if (dayInt > 30 || dayInt < 1)
+		{
+			return false;
+		}
+
+		else
+		{
+			return true;
+		}
+	}
+
+	else if (monthInt == 2)
+	{
+		// check if it is a leap year
+		if (dayInt == 29)
+		{
+			// End-of-century years typically aren't leap years, but 2000 was. If this program is still in use in 2100 re-write this code... 
+			// I would, but I'll be busy being dead.
+			if (yearInt % 4 == 0)
+			{
+				return true;
+			}
+
+			// Not divisible by four means it is not a leap year
+			else
+			{
+				return false;
+			}
+		}
+
+		// Non-leap years
+		else if (dayInt > 28 || dayInt < 1)
+		{
+			return false;
+		}
+
+		else
+		{
+			return true;
+		}
+	}
+
+	else
+	{
+		if (dayInt > 31 || dayInt < 0)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+
+	}
 }
 

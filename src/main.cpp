@@ -16,6 +16,8 @@
 // main.cpp : Defines the entry point for the application.
 
 #include "..\include\DBFunctions.hpp"
+#include <iostream>
+#include <algorithm>
 
 int main()
 {
@@ -380,9 +382,27 @@ int main()
 				std::wstring employeeTitle;
 				std::getline(std::wcin, employeeTitle);
 
-				std::cout << "\nPlease enter the Location ID number for this employee." << std::endl;
+				bool validInput = false;
 				std::wstring employeeLocation;
-				std::getline(std::wcin, employeeLocation);
+
+				while (!validInput) {
+
+					std::cout << "\nPlease enter the location name for this employee." << std::endl;
+					std::getline(std::wcin, employeeLocation);
+					
+					std::wstring employeeLocationID;
+					employeeLocationID = getLocationIDFromName(hStmt, employeeLocation);
+
+					if (employeeLocationID == L"") {
+
+						std::wcout << std::endl << L"There is no location with the name: " << employeeLocation << std::endl << L"Try again." << std::endl;
+
+					}
+
+					else {
+						validInput = true;
+					}
+				}
 
 				std::cout << "\nPlease enter the email address of the employee." << std::endl;
 				std::wstring employeeEmailAddress;
@@ -406,7 +426,7 @@ int main()
 				std::cout << "Title: ";
 				std::wcout << employeeTitle << std::endl;
 
-				std::cout << "Location ID: ";
+				std::cout << "Location: ";
 				std::wcout << employeeLocation << std::endl;
 
 				std::cout << "Email: ";
@@ -596,6 +616,19 @@ int main()
 			queryFinished = true;
 			break;
 		}
+
+		case 't':
+		{
+			std::wstring date;
+			std::cin.ignore(80, '\n');
+			std::getline(std::wcin, date);
+
+			bool validDateCheck;
+			validDateCheck = isValidDate(date);
+			 
+			break;
+		}
+
 		default:
 		{
 			//if invalid input is entered, print message and loop
