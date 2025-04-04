@@ -15,11 +15,13 @@
 
 
 #include "..\include\DBFunctions.hpp"
-#include <wchar.h>
 #include <iostream>
 #include <cstring>
 #include <fstream>
 #include <filesystem>
+#include <vector>
+
+#include <wchar.h>
 
 
 
@@ -258,7 +260,8 @@ int addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employee
 	std::wstring newEmployeeString = L"INSERT INTO Employees(Employee_Name, Employee_Title, Location_ID, Employee_Email, Employee_Phone_Number, Employee_Ext) VALUES (?, ?, ?, ?, ?, ?)";
 
 	//Execute
-	SQLExecDirect(hStmt, (SQLWCHAR*)newEmployeeString.c_str(), SQL_NTS);
+	int retcode = SQLExecDirect(hStmt, (SQLWCHAR*)newEmployeeString.c_str(), SQL_NTS);
+	diagSQLError(SQL_HANDLE_STMT, hStmt);
 
 	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
@@ -602,7 +605,7 @@ std::wstring getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName) {
 
 }
 
-std::wstring getResult(SQLHANDLE hStmt, int column) {
+std::wstring getResult(SQLHANDLE hStmt, int column, int row) {
 	/*
 
 		Return the result from a select query. The first input, handle, is the statement handle. The second input points the ODBC
@@ -610,9 +613,10 @@ std::wstring getResult(SQLHANDLE hStmt, int column) {
 
 	*/
 
-	// Set the cursor to the first row of results
+	// Set the cursor to the correct row of results
 	SQLRETURN fetchReturn = SQLFetch(hStmt);
-
+	//SQLRETURN fetchScrollReturn = SQLFetchScroll(hStmt, SQL_FETCH_ABSOLUTE, 1);
+	//diagSQLError(SQL_HANDLE_STMT, hStmt);
 	// Set up result variables 
 	SQLRETURN getResult;
 	std::wstring getResultString;
@@ -632,6 +636,41 @@ std::wstring getResult(SQLHANDLE hStmt, int column) {
 	getResultString.resize(stringLength);
 
 	return getResultString;
+}
+
+std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, std::wstring table, std::wstring distinct)
+{
+	std::wstring resultCountString = L"SELECT COUNT (DISTINCT [Device_Model_Type]) FROM [Device_Models]";
+
+	// Execute the query to find size of result loop.
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN statementResult;
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultCountString.c_str(), SQL_NTS);
+
+	std::wstring resultCountStr = getResult(hStmt, 1);
+
+	wchar_t* resultCountStrEnd;
+
+	int resultCountStringSize = resultCountStr.size();
+
+	int resultCount = wcstol((wchar_t*)resultCountStr.c_str(), &resultCountStrEnd, 10);
+
+	std::wstring resultStringQuery = L"SELECT DISTINCT [Device_Model_Type] FROM [Device_Models]";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultStringQuery.c_str(), SQL_NTS);
+
+	std::vector<std::wstring> results;
+	std::wstring nextResult;
+
+	for (int i=0;i<resultCount;i++)
+	{
+		nextResult = getResult(hStmt, 1, i);
+		results.push_back(nextResult);
+	}
+
+	
+
+	return results;
 }
 
 void enterKey() {

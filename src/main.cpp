@@ -18,6 +18,7 @@
 #include "..\include\DBFunctions.hpp"
 #include <iostream>
 #include <algorithm>
+#include <vector>
 
 int main()
 {
@@ -285,7 +286,7 @@ int main()
 				std::getline(std::wcin, deviceModelId);
 
 				std::wstring purchaseDate;
-				std::cout << "\nPlease enter the date in the following format: M/D/YYYY" << std::endl;
+				std::cout << "\nPlease enter the date in the following format: MM/DD/YYYY" << std::endl;
 				std::getline(std::wcin, purchaseDate);
 				std::cout << std::endl;
 
@@ -384,13 +385,14 @@ int main()
 
 				bool validInput = false;
 				std::wstring employeeLocation;
+				std::wstring employeeLocationID;
 
 				while (!validInput) {
 
 					std::cout << "\nPlease enter the location name for this employee." << std::endl;
 					std::getline(std::wcin, employeeLocation);
 					
-					std::wstring employeeLocationID;
+					
 					employeeLocationID = getLocationIDFromName(hStmt, employeeLocation);
 
 					if (employeeLocationID == L"") {
@@ -447,7 +449,7 @@ int main()
 					std::cin >> yesOrNo;
 					if (yesOrNo == 'y' || yesOrNo == 'Y') {
 
-						int retcode = addEmployee(hStmt, employeeName, employeeTitle, employeeLocation, employeeEmailAddress, employeePhoneNumber, employeeExtension);
+						int retcode = addEmployee(hStmt, employeeName, employeeTitle, employeeLocationID, employeeEmailAddress, employeePhoneNumber, employeeExtension);
 
 						if (retcode == 0) 
 						{
@@ -619,12 +621,9 @@ int main()
 
 		case 't':
 		{
-			std::wstring date;
-			std::cin.ignore(80, '\n');
-			std::getline(std::wcin, date);
-
-			bool validDateCheck;
-			validDateCheck = isValidDate(date);
+			std::vector<std::wstring> resultsColumn;
+			
+			resultsColumn = getAllResults(hStmt, L"[Device_Model_Type]", L"[Device_Models]", L"DISTINCT ");
 			 
 			break;
 		}
