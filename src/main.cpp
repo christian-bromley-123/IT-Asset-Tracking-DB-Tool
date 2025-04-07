@@ -624,7 +624,12 @@ int main()
 			std::vector<std::wstring> resultsColumn;
 			
 			resultsColumn = getAllResults(hStmt, L"[Device_Model_Type]", L"[Device_Models]", L"DISTINCT ");
-			 
+			
+			for (int i = 0;i<resultsColumn.size();i++) 
+			{
+				std::wcout << resultsColumn[i] << std::endl;
+			}
+
 			break;
 		}
 

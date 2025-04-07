@@ -44,7 +44,7 @@ SQLRETURN                   diagSQLError(int sqlHandle, SQLHANDLE handle);
 std::wstring                getIdFromEmail(SQLHANDLE handle, std::wstring employeeEmail);
 std::wstring                getLocationFromID(SQLHANDLE handle, std::wstring locationID);
 std::wstring                getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName);
-std::wstring                getResult(SQLHANDLE hStmt, int column=1, int row=1);
+std::wstring                getResult(SQLHANDLE hStmt, int column = 1, int row = 1, bool lastResult = true);
 std::vector<std::wstring>   getAllResults(SQLHANDLE hStmt, std::wstring column, std::wstring table, std::wstring distinct = L"");
 bool                        checkValid(SQLHANDLE handle, std::wstring table, std::wstring column, std::wstring param, std::wstring target);
 bool                        isValidDate(std::wstring date);

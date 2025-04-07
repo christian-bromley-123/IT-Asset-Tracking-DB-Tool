@@ -261,7 +261,7 @@ int addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employee
 
 	//Execute
 	int retcode = SQLExecDirect(hStmt, (SQLWCHAR*)newEmployeeString.c_str(), SQL_NTS);
-	diagSQLError(SQL_HANDLE_STMT, hStmt);
+	//diagSQLError(SQL_HANDLE_STMT, hStmt);
 
 	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
@@ -452,6 +452,10 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, char dbChoice
 	}
 
 	SQLRETURN stmtHandleReturn = SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
+	
+
+	//Set hStmt attribute
+	SQLRETURN stmtAttrReturn = SQLSetStmtAttr(hStmt, SQL_ATTR_CURSOR_SCROLLABLE, (void*)SQL_SCROLLABLE, 0);
 
 	return 0;
 }
@@ -605,7 +609,7 @@ std::wstring getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName) {
 
 }
 
-std::wstring getResult(SQLHANDLE hStmt, int column, int row) {
+std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
 	/*
 
 		Return the result from a select query. The first input, handle, is the statement handle. The second input points the ODBC
@@ -613,10 +617,12 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row) {
 
 	*/
 
+
+	
+
 	// Set the cursor to the correct row of results
-	SQLRETURN fetchReturn = SQLFetch(hStmt);
-	//SQLRETURN fetchScrollReturn = SQLFetchScroll(hStmt, SQL_FETCH_ABSOLUTE, 1);
-	//diagSQLError(SQL_HANDLE_STMT, hStmt);
+	
+	
 	// Set up result variables 
 	SQLRETURN getResult;
 	std::wstring getResultString;
@@ -625,11 +631,19 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row) {
 	getResultString.resize(64);
 	SQLLEN stringLength = 64;
 
-	// Get the data in the column passed to the function
-	getResult = SQLGetData(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), getResultString.size(), &stringLength);
+	SQLRETURN ret = SQLBindCol(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), stringLength, &stringLength);
 
+	SQLRETURN fetchReturn = SQLFetchScroll(hStmt, SQL_FETCH_ABSOLUTE, row);
+
+	// Get the data in the column passed to the function
+	//getResult = SQLGetData(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), getResultString.size(), &stringLength);
+	
 	//Close cursor so that more queries can run
-	SQLCloseCursor(hStmt);
+	if (lastResult) 
+	{
+		SQLCloseCursor(hStmt);
+	}
+	
 
 	//Resize result
 	stringLength = wcslen(getResultString.data());
@@ -640,6 +654,7 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row) {
 
 std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, std::wstring table, std::wstring distinct)
 {
+
 	std::wstring resultCountString = L"SELECT COUNT (DISTINCT [Device_Model_Type]) FROM [Device_Models]";
 
 	// Execute the query to find size of result loop.
@@ -664,7 +679,14 @@ std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, st
 
 	for (int i=0;i<resultCount;i++)
 	{
-		nextResult = getResult(hStmt, 1, i);
+
+		bool lastResult = false;
+
+		if (i == resultCount-1) 
+		{
+			lastResult = true;
+		}
+		nextResult = getResult(hStmt, 1, i+1, lastResult);
 		results.push_back(nextResult);
 	}
 
