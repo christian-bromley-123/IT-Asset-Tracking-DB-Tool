@@ -569,7 +569,6 @@ std::wstring getLocationFromID(SQLHANDLE hStmt, std::wstring locationID) {
 		This function takes the statement handle and location ID and returns the name of the location from the database.
 	*/
 
-
 	// Bind Location ID to param 1
 	SQLLEN strlen = SQL_NTS;
 	SQLRETURN bindResult;
@@ -609,6 +608,19 @@ std::wstring getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName) {
 
 }
 
+std::wstring getModelIdFromName(SQLHANDLE hStmt, std::wstring deviceName)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceName.c_str(), 0, &strlen);
+
+	std::wstring getModelIdQuery = L"SELECT TOP (1) [Device_Model_ID] FROM [Device_Models] WHERE Device_Model_Name = ?";
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getModelIdQuery.c_str(), SQL_NTS);
+	
+	return getResult(hStmt);
+
+}
+
+
 std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
 	/*
 
@@ -617,12 +629,6 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
 
 	*/
 
-
-	
-
-	// Set the cursor to the correct row of results
-	
-	
 	// Set up result variables 
 	SQLRETURN getResult;
 	std::wstring getResultString;
@@ -631,12 +637,11 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
 	getResultString.resize(64);
 	SQLLEN stringLength = 64;
 
+	// Bind result column for Fetch
 	SQLRETURN ret = SQLBindCol(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), stringLength, &stringLength);
 
+	// Fetch the row on the provided column
 	SQLRETURN fetchReturn = SQLFetchScroll(hStmt, SQL_FETCH_ABSOLUTE, row);
-
-	// Get the data in the column passed to the function
-	//getResult = SQLGetData(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), getResultString.size(), &stringLength);
 	
 	//Close cursor so that more queries can run
 	if (lastResult) 
@@ -652,10 +657,31 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
 	return getResultString;
 }
 
-std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, std::wstring table, std::wstring distinct)
+std::vector<std::wstring> getResultColumn (SQLHANDLE hStmt, bool isDistinct, std::wstring table, std::wstring column, std::wstring param, std::wstring target)
 {
 
-	std::wstring resultCountString = L"SELECT COUNT (DISTINCT [Device_Model_Type]) FROM [Device_Models]";
+	std::wstring distinct = L"";
+
+	if (isDistinct) 
+	{
+		distinct = L"DISTINCT ";
+	}
+
+	std::wstring resultCountString;
+
+	if (param == L"")
+	{
+		resultCountString = L"SELECT COUNT (" + distinct + column + L") FROM " + table;
+	}
+
+	else
+	{
+		// Bind target avoid type errors
+		SQLLEN strlen = SQL_NTS;
+		SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)target.c_str(), 0, &strlen);
+		resultCountString = L"SELECT COUNT (" + distinct + column + L") FROM " + table + L" WHERE " + param + L" = ?";
+	}
+	
 
 	// Execute the query to find size of result loop.
 	SQLLEN strlen = SQL_NTS;
@@ -670,7 +696,17 @@ std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, st
 
 	int resultCount = wcstol((wchar_t*)resultCountStr.c_str(), &resultCountStrEnd, 10);
 
-	std::wstring resultStringQuery = L"SELECT DISTINCT [Device_Model_Type] FROM [Device_Models]";
+	std::wstring resultStringQuery;
+
+	if (param == L"")
+	{
+		resultStringQuery = L"SELECT " + distinct + column + L" FROM " + table;
+	}
+
+	else
+	{
+		resultStringQuery = L"SELECT " + distinct + column + L" FROM " + table + L" WHERE " + param + L" = ?";
+	}
 
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultStringQuery.c_str(), SQL_NTS);
 

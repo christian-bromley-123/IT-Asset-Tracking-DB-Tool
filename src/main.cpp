@@ -269,21 +269,82 @@ int main()
 			//Run this loop until the user is satisfied.
 			while (yesOrNo != 'y' && yesOrNo != 'Y')
 			{
-				//reset yesOrNo so that the loop will come back around
-
 				//Gathering inputs, Device_Name, Serial_Tag, Device_Model_ID, Currently_Issued_To, Date_Purchased
 				std::wstring deviceNumber;
 				std::cout << "\nPlease scan the computer's barcode or enter the computer name." << std::endl;
 				std::cin.ignore(80, '\n');
 				std::getline(std::wcin, deviceNumber);
-
+				
 				std::wstring serialTag;
 				std::cout << "\nPlease scan or enter the computer's serial tag." << std::endl;
 				std::getline(std::wcin, serialTag);
 
 				std::wstring deviceModelId;
-				std::cout << "\nPlease scan or enter the computer's Device Model ID." << std::endl;
-				std::getline(std::wcin, deviceModelId);
+				bool validModelInput = false;
+				while (!validModelInput) {
+
+					std::wstring modelInput;
+					std::cout << "\nPlease enter the computer's Device Model. (i.e. Latitude 5550). Enter 'h' to find a model name." << std::endl;
+					std::getline(std::wcin, modelInput);
+
+					if (modelInput == L"h" || modelInput == L"H")
+					{
+						bool validTypeInput = false;
+						while (!validTypeInput) 
+						{
+							std::wstring typeInput;
+							std::cout << std::endl << "What is the device type? Enter 'h' for a list of device types." << std::endl;
+							std::getline(std::wcin, typeInput);
+
+							if (typeInput == L"h" || typeInput == L"H")
+							{
+								std::vector<std::wstring> types = getResultColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Type]");
+
+								std::wcout << std::endl << L"Device Types:" << std::endl;
+
+								for (int i = 0; i < types.size(); i++)
+								{
+									std::wcout << types[i] << std::endl;
+								}
+							}
+
+							else
+							{
+								if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Type]", L"Device_Model_Type", typeInput))
+								{
+									validTypeInput = true;
+
+									std::vector<std::wstring> models = getResultColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", typeInput);
+
+									std::wcout << std::endl << typeInput << L" Models:" << std::endl;
+
+									for (int i = 0; i < models.size(); i++)
+									{
+										std::wcout << models[i] << std::endl;
+									}
+								}
+								else
+								{
+									std::cout << std::endl << "Please enter a valid device type." << std::endl;
+								}
+							}
+						}
+					}
+
+					else 
+					{
+						if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Name", modelInput))
+						{
+							validModelInput = true;
+							deviceModelId = getModelIdFromName(hStmt, modelInput);
+						}
+
+						else
+						{
+							std::cout << std::endl << "Please enter a valid device type." << std::endl;
+						}
+					}
+				}
 
 				std::wstring purchaseDate;
 				std::cout << "\nPlease enter the date in the following format: MM/DD/YYYY" << std::endl;
@@ -310,7 +371,7 @@ int main()
 
 					std::cout << "Serial tag: ";
 
-					//Comment out this line if you plan to use a mix of upper and lower case characters
+					//Serial numbers are in all caps 
 					std::transform(serialTag.begin(), serialTag.end(), serialTag.begin(), ::toupper);
 
 					std::wcout << serialTag << std::endl;
@@ -623,7 +684,7 @@ int main()
 		{
 			std::vector<std::wstring> resultsColumn;
 			
-			resultsColumn = getAllResults(hStmt, L"[Device_Model_Type]", L"[Device_Models]", L"DISTINCT ");
+			resultsColumn = getResultColumn(hStmt, L"[Location_Name]", L"[Locations]", L"DISTINCT ");
 			
 			for (int i = 0;i<resultsColumn.size();i++) 
 			{
