@@ -46,6 +46,7 @@ std::wstring                getLocationFromID(SQLHANDLE handle, std::wstring loc
 std::wstring                getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName);
 std::wstring                getModelIdFromName(SQLHANDLE hStmt, std::wstring deviceName);
 std::wstring                getResult(SQLHANDLE hStmt, int column = 1, int row = 1, bool lastResult = true);
-std::vector<std::wstring>   getResultColumn(SQLHANDLE hStmt, bool isDistinct, std::wstring table, std::wstring column, std::wstring param = L"", std::wstring target = L"");
+std::vector<std::wstring>   getResultRow(SQLHANDLE hStmt, int row = 1, bool lastResult = true);
+std::vector<std::wstring>   getColumn(SQLHANDLE hStmt, bool isDistinct, std::wstring table, std::wstring column, std::wstring param = L"", std::wstring target = L"");
 bool                        checkValid(SQLHANDLE handle, std::wstring table, std::wstring column, std::wstring param, std::wstring target);
 bool                        isValidDate(std::wstring date);

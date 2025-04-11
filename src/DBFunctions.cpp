@@ -620,8 +620,16 @@ std::wstring getModelIdFromName(SQLHANDLE hStmt, std::wstring deviceName)
 
 }
 
+std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult)
+{
+	std::vector<std::wstring> getResultVector = getResultRow(hStmt, row);
 
-std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
+	
+	return getResultVector[column-1];
+}
+
+std::vector<std::wstring> getResultRow(SQLHANDLE hStmt, int row, bool lastResult) 
+{
 	/*
 
 		Return the result from a select query. The first input, handle, is the statement handle. The second input points the ODBC
@@ -629,20 +637,78 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
 
 	*/
 
-	// Set up result variables 
-	SQLRETURN getResult;
-	std::wstring getResultString;
+	// Get size the size needed for the result vector
+	short numColumns;
+	SQLNumResultCols(hStmt, &numColumns);
 
-	//Set string buffer
-	getResultString.resize(64);
-	SQLLEN stringLength = 64;
+	// Declare and resize the result vector an dlength vector
 
-	// Bind result column for Fetch
-	SQLRETURN ret = SQLBindCol(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), stringLength, &stringLength);
+	std::vector<std::wstring> getResultVector;
+	std::vector<SQLLEN> stringLengthVector;
+
+	getResultVector.resize(numColumns);
+	stringLengthVector.resize(numColumns);
+
+	// Set string buffer for each element of the result vector
+	for (int i=0;i<numColumns;i++) 
+	{
+		getResultVector[i].resize(64);
+		stringLengthVector[i] = 64;
+	}
+	
+	
+
+	
+	
+	// Bind result columns for Fetch
+
+	for (int i=0; i<(int)numColumns;i++)
+	{
+		//Find the SQL Type Relate it to the C type, then update for the column bind
+
+		std::wstring charOut;
+		charOut.resize(10);
+		short typeBuffer = 32;
+
+		short numOut = 0;
+
+		SQLRETURN retAttr = SQLColAttribute(hStmt, i+1, SQL_DESC_TYPE_NAME, (void*)charOut.c_str(), typeBuffer, &numOut, 0);
+
+		std::wstring checkInt = charOut.substr(0, 3);
+		std::wstring checkChar = charOut.substr(0, 7);
+		std::wstring checkFloat = charOut.substr(0,5);
+
+		int typeForBind = 0;
+
+		if (checkInt == L"int")
+		{
+			//typeForBind = SQL_C_SLONG;
+			typeForBind = SQL_C_WCHAR;
+		}
+
+		else if (checkChar == L"varchar")
+		{
+			typeForBind = SQL_C_WCHAR;
+		}
+
+		else if (checkFloat == L"float")
+		{
+			//typeForBind = SQL_C_FLOAT;
+			typeForBind = SQL_C_WCHAR;
+		}
+		
+		SQLRETURN retBinds = SQLBindCol(hStmt, i + 1, typeForBind, (void*)getResultVector[i].data(), stringLengthVector[i], &stringLengthVector[i]);
+
+		//Resize results
+		//stringLengthVector[i] = wcslen(getResultVector[i].data());
+		getResultVector[i].resize(stringLengthVector[i]);
+	}
+
+	
 
 	// Fetch the row on the provided column
 	SQLRETURN fetchReturn = SQLFetchScroll(hStmt, SQL_FETCH_ABSOLUTE, row);
-	
+
 	//Close cursor so that more queries can run
 	if (lastResult) 
 	{
@@ -650,14 +716,10 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult) {
 	}
 	
 
-	//Resize result
-	stringLength = wcslen(getResultString.data());
-	getResultString.resize(stringLength);
-
-	return getResultString;
+	return getResultVector;
 }
 
-std::vector<std::wstring> getResultColumn (SQLHANDLE hStmt, bool isDistinct, std::wstring table, std::wstring column, std::wstring param, std::wstring target)
+std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstring table, std::wstring column, std::wstring param, std::wstring target)
 {
 
 	std::wstring distinct = L"";
@@ -722,7 +784,7 @@ std::vector<std::wstring> getResultColumn (SQLHANDLE hStmt, bool isDistinct, std
 		{
 			lastResult = true;
 		}
-		nextResult = getResult(hStmt, 1, i+1, lastResult);
+		nextResult = getResult(hStmt, i+1, lastResult);
 		results.push_back(nextResult);
 	}
 
@@ -730,6 +792,8 @@ std::vector<std::wstring> getResultColumn (SQLHANDLE hStmt, bool isDistinct, std
 
 	return results;
 }
+
+
 
 void enterKey() {
 	/*

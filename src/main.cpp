@@ -298,7 +298,7 @@ int main()
 
 							if (typeInput == L"h" || typeInput == L"H")
 							{
-								std::vector<std::wstring> types = getResultColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Type]");
+								std::vector<std::wstring> types = getColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Type]");
 
 								std::wcout << std::endl << L"Device Types:" << std::endl;
 
@@ -314,7 +314,7 @@ int main()
 								{
 									validTypeInput = true;
 
-									std::vector<std::wstring> models = getResultColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", typeInput);
+									std::vector<std::wstring> models = getColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", typeInput);
 
 									std::wcout << std::endl << typeInput << L" Models:" << std::endl;
 
@@ -681,19 +681,25 @@ int main()
 		}
 
 		case 't':
-		{
-			std::vector<std::wstring> resultsColumn;
+		{	
+			std::wstring query = L"SELECT TOP (1) * FROM [Devices] WHERE Device_Name = 'NHWS217'";
+
+			SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+			std::vector<std::wstring> result;
+
+			result = getResultRow(hStmt);
 			
-			resultsColumn = getResultColumn(hStmt, L"[Location_Name]", L"[Locations]", L"DISTINCT ");
-			
-			for (int i = 0;i<resultsColumn.size();i++) 
+			std::wstring testRes = result[0];
+
+			for (int i=0; i<result.size();i++)
 			{
-				std::wcout << resultsColumn[i] << std::endl;
+				std::wcout << result[i] << L", ";
 			}
 
 			break;
 		}
-
+			
 		default:
 		{
 			//if invalid input is entered, print message and loop
