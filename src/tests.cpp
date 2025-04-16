@@ -57,7 +57,7 @@ std::vector<std::wstring> testAll(SQLHANDLE hStmt, bool isTestServer)
 	retcode = assignDevice(hStmt, L"TEST123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11", L"1"); // Invalid Email
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignDevice() catches invalid email entry");
 
-	retcode = assignDevice(hStmt, L"TEST123", L"testp@nhcares.com", L"11/11/11", L"1");	// Valid
+	retcode = assignDevice(hStmt, L"TEST123", L"testp@gmail.com", L"11/11/11", L"1");	// Valid
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignDevice()");
 
 	// Unassign device
