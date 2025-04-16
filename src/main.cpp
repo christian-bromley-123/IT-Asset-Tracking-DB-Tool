@@ -16,6 +16,7 @@
 // main.cpp : Defines the entry point for the application.
 
 #include "..\include\DBFunctions.hpp"
+#include "..\include\tests.hpp"
 #include <iostream>
 #include <algorithm>
 #include <vector>
@@ -186,7 +187,7 @@ int main()
 				{
 
 
-					std::cout << std::endl << "Is this person the first user of this device? (Y/N)" << std::endl;
+					std::cout << std::endl << "Is this device new? (Y/N)" << std::endl;
 					std::wcin >> firstUser;
 					std::wcin.clear();
 					std::wcin.ignore(10000, '\n');
@@ -682,21 +683,17 @@ int main()
 
 		case 't':
 		{	
-			std::wstring query = L"SELECT TOP (1) * FROM [Devices] WHERE Device_Name = 'NHWS217'";
+			std::vector<std::wstring> retVector;
+			retVector = testAll(hStmt, isTestServer);
+			std::wcout << std::endl << L"Test results:";
 
-			SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
-
-			std::vector<std::wstring> result;
-
-			result = getResultRow(hStmt);
-			
-			std::wstring testRes = result[0];
-
-			for (int i=0; i<result.size();i++)
+			for (int i = 0; i<retVector.size();i++)
 			{
-				std::wcout << result[i] << L", ";
+				std::wcout << std::endl << retVector[i];
 			}
 
+			std::wcout << std::endl;
+			enterKey();
 			break;
 		}
 			
@@ -707,7 +704,7 @@ int main()
 			break;
 		}
 
-
+		      
 		}
 	}
 return 0;

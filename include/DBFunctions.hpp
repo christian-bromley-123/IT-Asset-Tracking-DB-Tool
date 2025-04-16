@@ -33,7 +33,7 @@ std::wstring                getConString(char dbChoice, bool &isTestServer);
 int                         newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag, std::wstring deviceModelId, std::wstring purchaseDate, std::wstring deviceCost, std::wstring operatingSystem, bool isTestServer);
 int                         assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring employeeEmailAddress, std::wstring issueDate, std::wstring firstUser);
 int                         unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber);
-int                         addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employeeTitle, std::wstring employeeLocation, std::wstring employeeEmailAddress, std::wstring employeePhoneNumber, std::wstring employeeExtension);
+int                         addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employeeTitle, std::wstring employeeLocationId, std::wstring employeeEmailAddress, std::wstring employeePhoneNumber, std::wstring employeeExtension);
 int                         removeEmployee(SQLHSTMT hStmt, std::wstring employeeID);
 int                         removeDevice(SQLHSTMT hStmt, std::wstring deviceNumber);
 void                        writeLastDevice(std::wstring deviceNumber);
