@@ -61,7 +61,6 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)assignDeviceQuery.c_str(), SQL_NTS);
 
 		//TRIM
-
 		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
 		std::wstring trimDateQuery = L"UPDATE Devices SET Date_Issued = RTRIM(Date_Issued) WHERE Device_Name = ?";
@@ -120,20 +119,20 @@ int unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
 	//Prepare and execute the query
 	SQLRETURN prepareResult = SQLPrepare(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
 
-	SQLRETURN statementResult = SQLExecute(hStmt);
+	SQLRETURN updateStatementResult = SQLExecute(hStmt);
 
 	//Rebind
 	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
 	// Check query result
 	std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Devices] WHERE Device_Name = ?";
-	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
 
 	std::wstring checkExecResult = getResult(hStmt, 1);
 
 	std::wstring nullString = L"";
 
-	if (checkExecResult == nullString) {
+	if (checkExecResult == nullString && (updateStatementResult != -1 && updateStatementResult != 100)) {
 		return 0;
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 	}
@@ -177,6 +176,12 @@ int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag,
 
 	//Execute 
 	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{	
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return - 1;
+	}
 
 	// Free binds
 	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
@@ -233,41 +238,47 @@ int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag,
 	}
 
 	else {
-		std::cout << std::endl << "FAILED" << std::endl << std::endl;
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
-		diagSQLError(SQL_HANDLE_STMT, hStmt);
-		enterKey();
 		return -1;
 	}
 }
 
-int addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employeeTitle, std::wstring employeeLocation, std::wstring employeeEmailAddress, std::wstring employeePhoneNumber, std::wstring employeeExtension) {
+int addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employeeTitle, std::wstring employeeLocationId, std::wstring employeeEmailAddress, std::wstring employeePhoneNumber, std::wstring employeeExtension) {
 	/*
 
 		Add an employee to the database.
 
 	*/
+
+	std::vector<int> bindBuffers;
+
+	bindBuffers.push_back(employeeName.size());
+	bindBuffers.push_back(employeeTitle.size());
+	bindBuffers.push_back(employeeLocationId.size());
+	bindBuffers.push_back(employeeEmailAddress.size());
+	bindBuffers.push_back(employeePhoneNumber.size());
+	bindBuffers.push_back(employeeExtension.size());
+
 	//Bind parameters
 	SQLLEN strlen = SQL_NTS;
-	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeName.c_str(), 0, &strlen);
-	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeTitle.c_str(), 0, &strlen);
-	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeLocation.c_str(), 0, &strlen);
-	SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeEmailAddress.c_str(), 0, &strlen);
-	SQLRETURN bindResult5 = SQLBindParameter(hStmt, 5, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeePhoneNumber.c_str(), 0, &strlen);
-	SQLRETURN bindResult6 = SQLBindParameter(hStmt, 6, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeExtension.c_str(), 0, &strlen);
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, bindBuffers[0], 0, (wchar_t*)employeeName.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, bindBuffers[1], 0, (wchar_t*)employeeTitle.c_str(), 0, &strlen);
+	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, bindBuffers[2], 0, (wchar_t*)employeeLocationId.c_str(), 0, &strlen);
+	SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, bindBuffers[3], 0, (wchar_t*)employeeEmailAddress.c_str(), 0, &strlen);
+	SQLRETURN bindResult5 = SQLBindParameter(hStmt, 5, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, bindBuffers[4], 0, (wchar_t*)employeePhoneNumber.c_str(), 0, &strlen);
+	SQLRETURN bindResult6 = SQLBindParameter(hStmt, 6, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, bindBuffers[5], 0, (wchar_t*)employeeExtension.c_str(), 0, &strlen);
 
 	//Exectution string
 	std::wstring newEmployeeString = L"INSERT INTO Employees(Employee_Name, Employee_Title, Location_ID, Employee_Email, Employee_Phone_Number, Employee_Ext) VALUES (?, ?, ?, ?, ?, ?)";
 
 	//Execute
 	int retcode = SQLExecDirect(hStmt, (SQLWCHAR*)newEmployeeString.c_str(), SQL_NTS);
-	diagSQLError(SQL_HANDLE_STMT, hStmt);
 
 	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
 	bool isValid = checkValid(hStmt, L"[Employees]", L"[Employee_ID]", L"Employee_ID", getIdFromEmail(hStmt, employeeEmailAddress));
 
-	if (isValid) 
+	if (isValid && (retcode == 0 || retcode == 1)) 
 	{
 		return 0;
 	}
@@ -305,7 +316,7 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 
 	bool isValid = checkValid(hStmt, L"[Employees]", L"[Employee_ID]", L"Employee_ID", employeeID);
 
-	if (!isValid)
+	if (!isValid && (statementResult != -1 && statementResult != 100))
 	{
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return 0;
@@ -336,7 +347,7 @@ int removeDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
 
 	bool isValid = checkValid(hStmt, L"[Devices]", L"[Device_Name]", L"Device_Name", deviceNumber);
 
-	if (!isValid)
+	if (!isValid && (deleteResult != -1 && deleteResult != 100))
 	{
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return 0;
@@ -452,6 +463,10 @@ int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, char dbChoice
 	}
 
 	SQLRETURN stmtHandleReturn = SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
+	
+
+	//Set hStmt attribute
+	SQLRETURN stmtAttrReturn = SQLSetStmtAttr(hStmt, SQL_ATTR_CURSOR_SCROLLABLE, (void*)SQL_SCROLLABLE, 0);
 
 	return 0;
 }
@@ -529,8 +544,6 @@ SQLRETURN diagSQLError(int sqlHandle, SQLHANDLE handle) {
 
 	std::wcout << std::endl << errorMessage << L"\nError code : \n" << errorCode << std::endl;
 
-	enterKey();
-
 	return diagResult;
 }
 
@@ -564,7 +577,6 @@ std::wstring getLocationFromID(SQLHANDLE hStmt, std::wstring locationID) {
 	/*
 		This function takes the statement handle and location ID and returns the name of the location from the database.
 	*/
-
 
 	// Bind Location ID to param 1
 	SQLLEN strlen = SQL_NTS;
@@ -605,7 +617,27 @@ std::wstring getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName) {
 
 }
 
-std::wstring getResult(SQLHANDLE hStmt, int column, int row) {
+std::wstring getModelIdFromName(SQLHANDLE hStmt, std::wstring deviceName)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceName.c_str(), 0, &strlen);
+
+	std::wstring getModelIdQuery = L"SELECT TOP (1) [Device_Model_ID] FROM [Device_Models] WHERE Device_Model_Name = ?";
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getModelIdQuery.c_str(), SQL_NTS);
+	
+	return getResult(hStmt);
+
+}
+
+std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult)
+{
+	std::vector<std::wstring> getResultVector = getResultRow(hStmt, row);
+	
+	return getResultVector[column-1];
+}
+
+std::vector<std::wstring> getResultRow(SQLHANDLE hStmt, int row, bool lastResult) 
+{
 	/*
 
 		Return the result from a select query. The first input, handle, is the statement handle. The second input points the ODBC
@@ -613,34 +645,82 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row) {
 
 	*/
 
-	// Set the cursor to the correct row of results
-	SQLRETURN fetchReturn = SQLFetch(hStmt);
-	//SQLRETURN fetchScrollReturn = SQLFetchScroll(hStmt, SQL_FETCH_ABSOLUTE, 1);
-	//diagSQLError(SQL_HANDLE_STMT, hStmt);
-	// Set up result variables 
-	SQLRETURN getResult;
-	std::wstring getResultString;
+	// Get size the size needed for the result vector
+	short numColumns;
+	SQLNumResultCols(hStmt, &numColumns);
 
-	//Set string buffer
-	getResultString.resize(64);
-	SQLLEN stringLength = 64;
+	// Declare and resize the result vector an dlength vector
+	std::vector<std::wstring> getResultVector;
+	std::vector<SQLLEN> stringLengthVector;
 
-	// Get the data in the column passed to the function
-	getResult = SQLGetData(hStmt, column, SQL_C_WCHAR, (void*)getResultString.data(), getResultString.size(), &stringLength);
+	getResultVector.resize(numColumns);
+	stringLengthVector.resize(numColumns);
+
+	// Set string buffer for each element of the result vector
+	for (int i=0;i<numColumns;i++) 
+	{
+		getResultVector[i].resize(64);
+		stringLengthVector[i] = 64;
+	}
+	
+	// Bind result columns for Fetch
+	for (int i=0; i<(int)numColumns;i++)
+	{
+		SQLRETURN retBinds = SQLBindCol(hStmt, i + 1, SQL_C_WCHAR, (void*)getResultVector[i].data(), stringLengthVector[i], &stringLengthVector[i]);
+	}
+
+	// Fetch the row on the provided column
+	SQLRETURN fetchReturn = SQLFetchScroll(hStmt, SQL_FETCH_ABSOLUTE, row);
+
+	//Resize results
+	for (int i=0; i < (int)numColumns;i++)
+	{
+		// SQLFetchScroll will not change stringLengthVector[i] if it returns 100 (No data)
+		if (stringLengthVector[i] == -1 or fetchReturn == SQL_NO_DATA)
+		{
+			getResultVector[i].resize(0);
+		}
+
+		else
+		{
+			// the size of a wchar_t is 2 bytes. StringLengthVector will have returned the number of bytes, which is not what we want, hence division by 2
+			getResultVector[i].resize(stringLengthVector[i]/2);
+		}
+	}
 
 	//Close cursor so that more queries can run
-	SQLCloseCursor(hStmt);
+	if (lastResult) 
+	{
+		SQLCloseCursor(hStmt);
+	}
 
-	//Resize result
-	stringLength = wcslen(getResultString.data());
-	getResultString.resize(stringLength);
-
-	return getResultString;
+	return getResultVector;
 }
 
-std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, std::wstring table, std::wstring distinct)
+std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstring table, std::wstring column, std::wstring param, std::wstring target)
 {
-	std::wstring resultCountString = L"SELECT COUNT (DISTINCT [Device_Model_Type]) FROM [Device_Models]";
+	std::wstring distinct = L"";
+
+	if (isDistinct) 
+	{
+		distinct = L"DISTINCT ";
+	}
+
+	std::wstring resultCountString;
+
+	if (param == L"")
+	{
+		resultCountString = L"SELECT COUNT (" + distinct + column + L") FROM " + table;
+	}
+
+	else
+	{
+		// Bind target avoid type errors
+		SQLLEN strlen = SQL_NTS;
+		SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)target.c_str(), 0, &strlen);
+		resultCountString = L"SELECT COUNT (" + distinct + column + L") FROM " + table + L" WHERE " + param + L" = ?";
+	}
+	
 
 	// Execute the query to find size of result loop.
 	SQLLEN strlen = SQL_NTS;
@@ -655,7 +735,17 @@ std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, st
 
 	int resultCount = wcstol((wchar_t*)resultCountStr.c_str(), &resultCountStrEnd, 10);
 
-	std::wstring resultStringQuery = L"SELECT DISTINCT [Device_Model_Type] FROM [Device_Models]";
+	std::wstring resultStringQuery;
+
+	if (param == L"")
+	{
+		resultStringQuery = L"SELECT " + distinct + column + L" FROM " + table;
+	}
+
+	else
+	{
+		resultStringQuery = L"SELECT " + distinct + column + L" FROM " + table + L" WHERE " + param + L" = ?";
+	}
 
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultStringQuery.c_str(), SQL_NTS);
 
@@ -664,7 +754,14 @@ std::vector<std::wstring> getAllResults(SQLHANDLE hStmt, std::wstring column, st
 
 	for (int i=0;i<resultCount;i++)
 	{
-		nextResult = getResult(hStmt, 1, i);
+
+		bool lastResult = false;
+
+		if (i == resultCount-1) 
+		{
+			lastResult = true;
+		}
+		nextResult = getResult(hStmt, i+1, lastResult);
 		results.push_back(nextResult);
 	}
 
@@ -715,7 +812,6 @@ bool checkValid(SQLHANDLE hStmt, std::wstring table, std::wstring column, std::w
 	else {
 		return true;
 	}
-
 }
 
 bool isValidDate(std::wstring date) 
@@ -806,7 +902,6 @@ bool isValidDate(std::wstring date)
 		{
 			return true;
 		}
-
 	}
 }
 
