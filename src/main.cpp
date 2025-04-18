@@ -662,6 +662,11 @@ int main()
 			break;
 		}
 
+		case '7':
+		{
+			
+		}
+
 		// Prints the last entered device
 		case '0':
 		{
