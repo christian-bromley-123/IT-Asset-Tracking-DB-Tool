@@ -36,6 +36,7 @@ int                         unassignDevice(SQLHSTMT hStmt, std::wstring deviceNu
 int                         addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employeeTitle, std::wstring employeeLocationId, std::wstring employeeEmailAddress, std::wstring employeePhoneNumber, std::wstring employeeExtension);
 int                         removeEmployee(SQLHSTMT hStmt, std::wstring employeeID);
 int                         removeDevice(SQLHSTMT hStmt, std::wstring deviceNumber);
+int                         writeReport(SQLHANDLE hStmt, int option);
 void                        writeLastDevice(std::wstring deviceNumber);
 void                        readLastDevice();
 void                        enterKey();

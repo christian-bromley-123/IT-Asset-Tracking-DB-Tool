@@ -430,6 +430,16 @@ void readLastDevice() {
 	return;
 }
 
+int writeReport(SQLHANDLE hStmt, int option)
+{
+	if (option == 1)
+	{
+		
+	}
+
+	return 0;
+}
+
 int connectDatabase(SQLHENV& hEnv, SQLHDBC& hDbc, SQLHSTMT& hStmt, char dbChoice, bool& isTestServer) {
 	/*
 
@@ -631,7 +641,7 @@ std::wstring getModelIdFromName(SQLHANDLE hStmt, std::wstring deviceName)
 
 std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult)
 {
-	std::vector<std::wstring> getResultVector = getResultRow(hStmt, row);
+	std::vector<std::wstring> getResultVector = getResultRow(hStmt, row, lastResult);
 	
 	return getResultVector[column-1];
 }
@@ -684,7 +694,7 @@ std::vector<std::wstring> getResultRow(SQLHANDLE hStmt, int row, bool lastResult
 		else
 		{
 			// the size of a wchar_t is 2 bytes. StringLengthVector will have returned the number of bytes, which is not what we want, hence division by 2
-			getResultVector[i].resize(stringLengthVector[i]/2);
+			getResultVector[i].resize(wcslen((wchar_t*)getResultVector[i].data()));
 		}
 	}
 
@@ -761,7 +771,7 @@ std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstr
 		{
 			lastResult = true;
 		}
-		nextResult = getResult(hStmt, i+1, lastResult);
+		nextResult = getResult(hStmt, 1, i+1, lastResult);
 		results.push_back(nextResult);
 	}
 
