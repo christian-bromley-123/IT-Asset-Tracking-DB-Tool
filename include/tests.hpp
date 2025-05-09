@@ -11,5 +11,6 @@
 #include <sqlext.h>
 #include <wchar.h>
 
-std::vector<std::wstring> testAll(SQLHANDLE hStmt, bool isTestServer);
-std::wstring testResult(int actualResult, int expectedResult);
+std::vector<std::wstring>	testAll(SQLHANDLE hStmt, bool isTestServer);
+std::wstring				testResult(int actualResult, int expectedResult);
+void						clearTestData(SQLHANDLE hStmt);
