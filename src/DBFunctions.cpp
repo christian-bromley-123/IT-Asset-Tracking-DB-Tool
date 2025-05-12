@@ -1463,7 +1463,12 @@ std::wstring getModelIdFromModelName(SQLHANDLE hStmt, std::wstring modelName)
 std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult)
 {
 	std::vector<std::wstring> getResultVector = getResultRow(hStmt, row, lastResult);
-	
+	std::vector<std::wstring> emptyString;
+	if (getResultVector.size() == 0)
+	{
+		return L"";
+	}
+
 	return getResultVector[column-1];
 }
 
@@ -1500,8 +1505,14 @@ std::vector<std::wstring> getResultRow(SQLHANDLE hStmt, int row, bool lastResult
 	*/
 
 	// Get size the size needed for the result vector
-	short numColumns;
+	short numColumns = -1;
 	SQLNumResultCols(hStmt, &numColumns);
+
+	if (numColumns < 1)
+	{
+		std::vector<std::wstring> emptyVector;
+		return emptyVector;
+	}
 
 	// Declare and resize the result vector an dlength vector
 	std::vector<std::wstring> getResultVector;
