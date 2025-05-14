@@ -1468,8 +1468,8 @@ std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult)
 	{
 		return L"";
 	}
-
-	return getResultVector[column-1];
+	std::wstring getResultString = getResultVector[column - 1];
+	return getResultString;
 }
 
 std::wstring getDeviceTypeFromModelId(SQLHANDLE hStmt, std::wstring deviceModelId)
@@ -1591,7 +1591,6 @@ std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstr
 	SQLLEN strlen = SQL_NTS;
 	SQLRETURN statementResult;
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultCountString.c_str(), SQL_NTS);
-
 	std::wstring resultCountStr = getResult(hStmt, 1);
 
 	wchar_t* resultCountStrEnd;
@@ -1613,7 +1612,7 @@ std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstr
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultStringQuery.c_str(), SQL_NTS);
 
 	std::vector<std::wstring> results;
-	std::wstring nextResult;
+	std::wstring nextResult = L"";
 
 	for (int i=0;i<resultCount;i++)
 	{
@@ -1627,9 +1626,6 @@ std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstr
 		nextResult = getResult(hStmt, 1, i+1, lastResult);
 		results.push_back(nextResult);
 	}
-
-	
-
 	return results;
 }
 

@@ -389,7 +389,8 @@ int main()
 							{
 								typeFound = true;
 
-								std::vector<std::wstring> deviceModelList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", deviceType);
+								std::vector<std::wstring> deviceModelList;
+								deviceModelList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", deviceType);
 
 								// Print list of types to the user
 
