@@ -344,6 +344,7 @@ int main()
 				}
 
 			}
+			break;
 		}
 
 		// Enter a new device into the database
@@ -965,8 +966,7 @@ int main()
 
 		case '7':
 		{
-			std::wstring deviceType = getDeviceTypeFromModelId(hStmt, L"1");
-			break;
+			
 		}
 
 		// Prints the last entered device

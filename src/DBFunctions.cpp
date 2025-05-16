@@ -928,16 +928,25 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 	// Rebind after while loop (parameter is not allowed out of scope)
 	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
 
-	// Unassign device
-	std::wstring unassignAllDevices = L"UPDATE [Devices] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	// Unassign devices
+	std::wstring unassignAllDevices = L"UPDATE [Computers] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
 	SQLRETURN statementResult;
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 
+	unassignAllDevices = L"UPDATE [Peripherals] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
+
+	unassignAllDevices = L"UPDATE [Hotspots] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
+
+	unassignAllDevices = L"UPDATE [Office_Equipment] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
+	
 
 	// Finally, remove the employee
 	std::wstring removeEmpQuery = L"DELETE FROM [Employees] WHERE Employee_ID = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)removeEmpQuery.c_str(), SQL_NTS);
-
+	diagSQLError(SQL_HANDLE_STMT, hStmt);
 	bool isValid = checkValid(hStmt, L"[Employees]", L"[Employee_ID]", L"Employee_ID", employeeID);
 
 	if (!isValid && (statementResult != -1 && statementResult != 100))
