@@ -519,7 +519,7 @@ int newComputer(SQLHSTMT hStmt, std::wstring computerName, std::wstring serialNu
 
 	//Generate query
 	std::wstring addDeviceQuery = L"INSERT INTO Computers (Computer_Name, Serial_Number, Device_Model_ID, Date_Purchased, Cost, Operating_System) VALUES (?, ?, ?, ?, ?, ?)";
-
+	
 	//Execute 
 	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
 
@@ -578,6 +578,7 @@ int newComputer(SQLHSTMT hStmt, std::wstring computerName, std::wstring serialNu
 	std::wstring deviceSerialFromDB = serialNumber;
 
 	if (checkName == deviceNumberFromDB && checkTag == deviceSerialFromDB) {
+		int transactionResult = recordDeviceTransation(hStmt, L"Test_Device", L"1");
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return 0;
 	}
@@ -946,7 +947,7 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 	// Finally, remove the employee
 	std::wstring removeEmpQuery = L"DELETE FROM [Employees] WHERE Employee_ID = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)removeEmpQuery.c_str(), SQL_NTS);
-	diagSQLError(SQL_HANDLE_STMT, hStmt);
+
 	bool isValid = checkValid(hStmt, L"[Employees]", L"[Employee_ID]", L"Employee_ID", employeeID);
 
 	if (!isValid && (statementResult != -1 && statementResult != 100))
@@ -1676,6 +1677,38 @@ std::vector<std::wstring> getAllResultColumnNames(SQLHANDLE hStmt)
 	}
 
 	return columnNames;
+}
+
+int recordDeviceTransation(SQLHANDLE hStmt, std::wstring deviceName, std::wstring transactionType, std::wstring employee)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceName.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)transactionType.c_str(), 0, &strlen);
+	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employee.c_str(), 0, &strlen);
+
+	std::wstring newDeviceTransaction;
+
+	if (employee == L"")
+	{
+		newDeviceTransaction = L"INSERT INTO Device_Transactions (Device_Name, Transaction_Type, Employee) VALUES (?, ?, NULL)";
+	}
+	else 
+	{
+		newDeviceTransaction = L"INSERT INTO Device_Transactions (Device_Name, Transaction_Type, Employee) VALUES (?, ?, ?)";
+	}
+	
+
+	//Execute 
+	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)newDeviceTransaction.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+
+
+	return 0;
 }
 
 void enterKey() {

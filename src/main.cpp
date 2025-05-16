@@ -966,7 +966,7 @@ int main()
 
 		case '7':
 		{
-			
+			recordDeviceTransation(hStmt, L"Test_Device", L"1", L"");
 		}
 
 		// Prints the last entered device
