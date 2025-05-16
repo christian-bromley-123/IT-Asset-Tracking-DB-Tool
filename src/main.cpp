@@ -907,7 +907,7 @@ int main()
 
 				bool isInComputers = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
 				bool isInPeripherals = checkValid(hStmt, L"[Peripherals]", L"[Peripheral_Name]", L"Peripheral_Name", deviceNumber);
-				bool isInHotspots = checkValid(hStmt, L"[Hotspots]", L"[Phone_Number]", L"Phone_Number", deviceNumber);
+				bool isInHotspots = checkValid(hStmt, L"[Hotspots]", L"[IMEI_Number]", L"IMEI_Number", deviceNumber);
 				bool isInEquipment = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
 
 
@@ -966,7 +966,7 @@ int main()
 
 		case '7':
 		{
-			recordDeviceTransation(hStmt, L"Test_Device", L"1", L"");
+			recordDeviceTransaction(hStmt, L"Test_Device", L"1", L"");
 		}
 
 		// Prints the last entered device

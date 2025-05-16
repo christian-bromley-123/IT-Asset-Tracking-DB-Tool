@@ -39,54 +39,54 @@ std::vector<std::wstring> testAll(SQLHANDLE hStmt, bool isTestServer)
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": addEmployee()");
 
 	// Create, assign, unassign, and delete a computer
-	retcode = newComputer(hStmt, L"TEST123", L"AAAAAAAA", L"****", L"11/11/11", L"1000", L"Win 11", true);	// Invalid Device Model
+	retcode = newComputer(hStmt, L"TESTCOMPUTER123", L"AAAAAAAA", L"****", L"11/11/11", L"1000", L"Win 11", true);	// Invalid Device Model
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": newComputer() catches invalid device model");
 
-	retcode = newComputer(hStmt, L"TEST123", L"AAAAAAAA", L"1", L"11/11/11", L"1000", L"Win 11", true);	// Valid if device model corresponds to a computer
+	retcode = newComputer(hStmt, L"TESTCOMPUTER123", L"AAAAAAAA", L"1", L"11/11/11", L"1000", L"Win 11", true);	// Valid if device model corresponds to a computer
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": newComputer()");
 
-	retcode = assignComputer(hStmt, L"TEST123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11", L"1"); // Invalid Email
+	retcode = assignComputer(hStmt, L"TESTCOMPUTER123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11", L"1"); // Invalid Email
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignComputer() catches invalid email entry");
 
-	retcode = assignComputer(hStmt, L"TEST123", L"testp@gmail.com", L"11/11/11", L"1");	// Valid
+	retcode = assignComputer(hStmt, L"TESTCOMPUTER123", L"testp@gmail.com", L"11/11/11", L"1");	// Valid
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignComputer()");
 
 	retcode = unassignComputer(hStmt, L"----------"); // invalid name
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignComputer() catches invalid device name");
 
-	retcode = unassignComputer(hStmt, L"TEST123"); // valid
+	retcode = unassignComputer(hStmt, L"TESTCOMPUTER123"); // valid
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": unassignComputer()");
 
 	retcode = removeComputer(hStmt, L"+++++++++++"); // invalid name
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": removeComputer() catches invalid device name");
 
-	retcode = removeComputer(hStmt, L"TEST123"); // valid
+	retcode = removeComputer(hStmt, L"TESTCOMPUTER123"); // valid
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": removeComputer()");
 
 	// Create, assign, unassign, and delete a peripheral
-	retcode = newPeripheral(hStmt, L"TEST123", L"AAAAAAAA", L"****", L"11/11/11", L"1000", true);	// Invalid Device Model
+	retcode = newPeripheral(hStmt, L"PERIPHERAL123", L"AAAAAAAA", L"****", L"11/11/11", L"1000", true);	// Invalid Device Model
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": newPeripheral() catches invalid device model");
 
-	retcode = newPeripheral(hStmt, L"TEST123", L"AAAAAAAA", L"27", L"11/11/11", L"1000", true);	// Valid if device model corresponds to a peripheral
+	retcode = newPeripheral(hStmt, L"PERIPHERAL123", L"AAAAAAAA", L"27", L"11/11/11", L"1000", true);	// Valid if device model corresponds to a peripheral
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": newPeripheral()");
 
-	retcode = assignPeripheral(hStmt, L"TEST123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11", L"1"); // Invalid Email
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignComputer() catches invalid email entry");
+	retcode = assignPeripheral(hStmt, L"PERIPHERAL123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11", L"1"); // Invalid Email
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignPeripheral() catches invalid email entry");
 
-	retcode = assignPeripheral(hStmt, L"TEST123", L"testp@gmail.com", L"11/11/11", L"1");	// Valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignComputer()");
+	retcode = assignPeripheral(hStmt, L"PERIPHERAL123", L"testp@gmail.com", L"11/11/11", L"1");	// Valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignPeripheral()");
 
 	retcode = unassignPeripheral(hStmt, L"----------"); // invalid name
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignComputer() catches invalid device name");
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignPeripheral() catches invalid device name");
 
-	retcode = unassignPeripheral(hStmt, L"TEST123"); // valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": unassignComputer()");
+	retcode = unassignPeripheral(hStmt, L"PERIPHERAL123"); // valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": unassignPeripheral()");
 
 	retcode = removePeripheral(hStmt, L"+++++++++++"); // invalid name
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": removeComputer() catches invalid device name");
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": removePeripheral() catches invalid device name");
 
-	retcode = removePeripheral(hStmt, L"TEST123"); // valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": removeComputer()");
+	retcode = removePeripheral(hStmt, L"PERIPHERAL123"); // valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": removePeripheral()");
 
 	// Create, assign, unassign, and delete a hotspot
 	retcode = newHotspot(hStmt, L"TEST123", L"AAAAAAAA", L"****", L"11/11/11", L"1000", true);	// Invalid Device Model
@@ -95,49 +95,48 @@ std::vector<std::wstring> testAll(SQLHANDLE hStmt, bool isTestServer)
 	retcode = newHotspot(hStmt, L"TEST123", L"AAAAAAAA", L"30", L"11/11/11", L"1000", true);	// Valid if device model corresponds to a hotspot
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": newHotspot()");
 
-	retcode = assignHotspot(hStmt, L"TEST123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11"); // Invalid Email
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignComputer() catches invalid email entry");
+	retcode = assignHotspot(hStmt, L"AAAAAAAA", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11"); // Invalid Email
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignHotspot() catches invalid email entry");
 
-	retcode = assignHotspot(hStmt, L"TEST123", L"testp@gmail.com", L"11/11/11");	// Valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignComputer()");
+	retcode = assignHotspot(hStmt, L"AAAAAAAA", L"testp@gmail.com", L"11/11/11");	// Valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignHotspot()");
 
 	retcode = unassignHotspot(hStmt, L"----------"); // invalid name
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignComputer() catches invalid device name");
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignHotspot() catches invalid device name");
 
-	retcode = unassignHotspot(hStmt, L"TEST123"); // valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": unassignComputer()");
+	retcode = unassignHotspot(hStmt, L"AAAAAAAA"); // valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": unassignHotspot()");
 
 	retcode = removeHotspot(hStmt, L"+++++++++++"); // invalid name
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": removeComputer() catches invalid device name");
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": removeHotspot() catches invalid device name");
 
-	retcode = removeHotspot(hStmt, L"TEST123"); // valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": removeComputer()");
-
+	retcode = removeHotspot(hStmt, L"AAAAAAAA"); // valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": removeHotspot()");
 
 	// Create, assign, unassign, and delete office equipment
-	retcode = newEquipment(hStmt, L"TEST123", L"AAAAAAAA", L"****", L"11/11/11", L"1000", true);	// Invalid Device Model
+	retcode = newEquipment(hStmt, L"TESTEQUIPMENT123", L"AAAAAAAA", L"****", L"11/11/11", L"1000", true);	// Invalid Device Model
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": newEquipment() catches invalid device model");
 	
-	retcode = newEquipment(hStmt, L"TEST123", L"AAAAAAAA", L"24", L"11/11/11", L"1000", true);	// Valid if device model corresponds to office equipment
+	retcode = newEquipment(hStmt, L"TESTEQUIPMENT123", L"AAAAAAAA", L"24", L"11/11/11", L"1000", true);	// Valid if device model corresponds to office equipment
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": newEquipment()");
 
-	retcode = assignEquipment(hStmt, L"TEST123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11"); // Invalid Email
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignComputer() catches invalid email entry");
+	retcode = assignEquipment(hStmt, L"TESTEQUIPMENT123", L"aaaaaaaaaaaaaaaaaaa@gmail.com", L"11/11/11"); // Invalid Email
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": assignEquipment() catches invalid email entry");
 
-	retcode = assignEquipment(hStmt, L"TEST123", L"testp@gmail.com", L"11/11/11");	// Valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignComputer()");
+	retcode = assignEquipment(hStmt, L"TESTEQUIPMENT123", L"testp@gmail.com", L"11/11/11");	// Valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignEquipment()");
 
 	retcode = unassignEquipment(hStmt, L"----------"); // invalid name
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignComputer() catches invalid device name");
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignEquipment() catches invalid device name");
 
-	retcode = unassignEquipment(hStmt, L"TEST123"); // valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": unassignComputer()");
+	retcode = unassignEquipment(hStmt, L"TESTEQUIPMENT123"); // valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": unassignEquipment()");
 
 	retcode = removeEquipment(hStmt, L"+++++++++++"); // invalid name
-	retcodeStringVector.push_back(testResult(retcode, -1) + L": removeComputer() catches invalid device name");
+	retcodeStringVector.push_back(testResult(retcode, -1) + L": removeEquipment() catches invalid device name");
 
-	retcode = removeEquipment(hStmt, L"TEST123"); // valid
-	retcodeStringVector.push_back(testResult(retcode, 0) + L": removeComputer()");
+	retcode = removeEquipment(hStmt, L"TESTEQUIPMENT123"); // valid
+	retcodeStringVector.push_back(testResult(retcode, 0) + L": removeEquipment()");
 
 	// Delete Employee
 	retcode = removeEmployee(hStmt, getIdFromEmail(hStmt, L"******************")); // invalid employee name
