@@ -104,10 +104,11 @@ int main()
 			while (true)
 			{
 				std::wstring deviceNumber;
-
+				std::wstring deviceTable;
 				// DEVICE NUMBER
 				while (true)
 				{
+
 					// Declare local variables to pass to assignDevice();
 					std::cout << std::endl << "Please scan the device barcode on the device you would like to assign or enter it manually. Enter 'q' or 'Q' to stop." << std::endl;
 					std::wcin >> deviceNumber;
@@ -118,9 +119,30 @@ int main()
 					if (deviceNumber == L"q" || deviceNumber == L"Q") {
 						break;
 					}
+					deviceTable = getDeviceTableFromModelId(hStmt, getModelIdFromDeviceName(hStmt, deviceNumber));
+
+					bool isValid = false;
 
 					// Check if the device name is in the system
-					bool isValid = checkValid(hStmt, L"[Devices]", L"[Device_Name]", L"Device_Name", deviceNumber);
+					if (deviceTable == L"Computers")
+					{
+						isValid = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
+					}
+
+					else if (deviceTable == L"Peripherals")
+					{
+						isValid = checkValid(hStmt, L"[Peripherals]", L"[Peripherals_Name]", L"Peripherals_Name", deviceNumber);
+					}
+
+					else if (deviceTable == L"Hotspots")
+					{
+						isValid = checkValid(hStmt, L"[Hotspots]", L"[Phone_Number]", L"Phone_Number", deviceNumber);
+					}
+
+					else
+					{
+						isValid = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
+					}
 
 					if (isValid)
 					{
@@ -182,33 +204,54 @@ int main()
 
 				// Get the first user bool
 				std::wstring    firstUser;
-
-				while (firstUser != L"1" && firstUser != L"0")
+				if (deviceTable == L"Computers" || deviceTable == L"Peripherals")
 				{
-
-
-					std::cout << std::endl << "Is this device new? (Y/N)" << std::endl;
-					std::wcin >> firstUser;
-					std::wcin.clear();
-					std::wcin.ignore(10000, '\n');
-
-					if (firstUser == L"Y" || firstUser == L"y")
+					while (firstUser != L"1" && firstUser != L"0")
 					{
-						firstUser = L"1";
-					}
 
-					else if (firstUser == L"N" || firstUser == L"n")
-					{
-						firstUser = L"0";
-					}
 
-					else
-					{
-						std::cout << std::endl << "Please select a valid option." << std::endl;
+						std::cout << std::endl << "Is this device new? (Y/N)" << std::endl;
+						std::wcin >> firstUser;
+						std::wcin.clear();
+						std::wcin.ignore(10000, '\n');
+
+						if (firstUser == L"Y" || firstUser == L"y")
+						{
+							firstUser = L"1";
+						}
+
+						else if (firstUser == L"N" || firstUser == L"n")
+						{
+							firstUser = L"0";
+						}
+
+						else
+						{
+							std::cout << std::endl << "Please select a valid option." << std::endl;
+						}
 					}
 				}
+				
+				int retcode;
+				if (deviceTable == L"Computers")
+				{
+					retcode = assignComputer(hStmt, deviceNumber, employeeEmailAddress, issueDate, firstUser);
+				}
 
-				int retcode = assignDevice(hStmt, deviceNumber, employeeEmailAddress, issueDate, firstUser);
+				else if (deviceTable == L"Peripherals")
+				{
+					retcode = assignPeripheral(hStmt, deviceNumber, employeeEmailAddress, issueDate, firstUser);
+				}
+
+				else if (deviceTable == L"Hotspots")
+				{
+					retcode = assignHotspot(hStmt, deviceNumber, employeeEmailAddress, issueDate);
+				}
+
+				else
+				{
+					retcode = assignEquipment(hStmt, deviceNumber, employeeEmailAddress, issueDate);
+				}
 
 				if (retcode == 0) {
 					std::cout << std::endl << "SUCCESS." << std::endl << std::endl;
@@ -238,11 +281,53 @@ int main()
 					break;
 				}
 
-				int isValid = checkValid(hStmt, L"[Devices]", L"[Device_Name]", L"Device_Name", deviceNumber);
+				std::wstring deviceTable;
+				deviceTable = getDeviceTableFromModelId(hStmt, getModelIdFromDeviceName(hStmt, deviceNumber));
+
+				bool isValid = false;
+
+				if (deviceTable == L"Computers")
+				{
+					isValid = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
+				}
+
+				else if (deviceTable == L"Peripherals")
+				{
+					isValid = checkValid(hStmt, L"[Peripherals]", L"[Peripherals_Name]", L"Peripherals_Name", deviceNumber);
+				}
+
+				else if (deviceTable == L"Hotspots")
+				{
+					isValid = checkValid(hStmt, L"[Hotspots]", L"[Phone_Number]", L"Phone_Number", deviceNumber);
+				}
+
+				else 
+				{
+					isValid = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
+				}
 
 				if (isValid)
-				{
-					int retcode = unassignDevice(hStmt, deviceNumber);
+				{	
+					int retcode;
+					if (deviceTable == L"Computers")
+					{
+						retcode = unassignComputer(hStmt, deviceNumber);
+					}
+
+					else if (deviceTable == L"Peripherals")
+					{
+						retcode = unassignPeripheral(hStmt, deviceNumber);
+					}
+
+					else if (deviceTable == L"Hotspots")
+					{
+						retcode = unassignHotspot(hStmt, deviceNumber);
+					}
+
+					else
+					{
+						retcode = unassignEquipment(hStmt, deviceNumber);
+					}
 
 					if (retcode == 0) {
 						std::cout << std::endl << "SUCCESS." << std::endl << std::endl;
@@ -250,7 +335,7 @@ int main()
 					else {
 						std::cout << std::endl << "FAILED." << std::endl << std::endl;
 					}
-					
+					break;
 				}
 
 				else
@@ -265,164 +350,352 @@ int main()
 		// Enter a new device into the database
 		case '3':
 		{
-			char yesOrNo = 'a';
-
-			//Run this loop until the user is satisfied.
-			while (yesOrNo != 'y' && yesOrNo != 'Y')
+			// Get Device Model
+			std::wstring deviceModel;
+			
+			bool modelFound = false;
+			std::cin.ignore(80, '\n');
+			while (!modelFound)
 			{
-				//Gathering inputs, Device_Name, Serial_Tag, Device_Model_ID, Currently_Issued_To, Date_Purchased
-				std::wstring deviceNumber;
-				std::cout << "\nPlease scan the computer's barcode or enter the computer name." << std::endl;
-				std::cin.ignore(80, '\n');
-				std::getline(std::wcin, deviceNumber);
-				
-				std::wstring serialTag;
-				std::cout << "\nPlease scan or enter the computer's serial tag." << std::endl;
-				std::getline(std::wcin, serialTag);
+				std::wcout << std::endl << L"Please enter the model name of the device you are entering. Press 'h' for help finding the name." << std::endl;
+				std::getline(std::wcin, deviceModel);
 
-				std::wstring deviceModelId;
-				bool validModelInput = false;
-				while (!validModelInput) {
-
-					std::wstring modelInput;
-					std::cout << "\nPlease enter the computer's Device Model. (i.e. Latitude 5550). Enter 'h' to find a model name." << std::endl;
-					std::getline(std::wcin, modelInput);
-
-					if (modelInput == L"h" || modelInput == L"H")
+				if (deviceModel == L"h" || deviceModel == L"H")
+				{
+					// Help Loop
+					bool typeFound = false;
+					while (!typeFound)
 					{
-						bool validTypeInput = false;
-						while (!validTypeInput) 
-						{
-							std::wstring typeInput;
-							std::cout << std::endl << "What is the device type? Enter 'h' for a list of device types." << std::endl;
-							std::getline(std::wcin, typeInput);
+						std::wcout << std::endl << L"Please enter the device type. Press 'h' for a list of types." << std::endl;
+						std::wstring deviceType;
+						std::getline(std::wcin, deviceType);
 
-							if (typeInput == L"h" || typeInput == L"H")
+						if (deviceType == L"h" || deviceType == L"H")
+						{
+							std::vector<std::wstring> deviceTypeList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Type]");
+
+							// Print list of types to the user
+							std::wcout << std::endl << L"Device Types:" << std::endl;
+
+							for (int i = 0; i < deviceTypeList.size(); i++)
 							{
-								std::vector<std::wstring> types = getColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Type]");
+								std::wcout << deviceTypeList[i] << std::endl;
+							}
+						}
+
+						else
+						{
+							// Check that the model type is valid
+							if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Type]", L"Device_Model_Type", deviceType))
+							{
+								typeFound = true;
+
+								std::vector<std::wstring> deviceModelList;
+								deviceModelList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", deviceType);
+
+								// Print list of types to the user
 
 								std::wcout << std::endl << L"Device Types:" << std::endl;
 
-								for (int i = 0; i < types.size(); i++)
+								for (int i = 0; i < deviceModelList.size(); i++)
 								{
-									std::wcout << types[i] << std::endl;
+									std::wcout << deviceModelList[i] << std::endl;
 								}
 							}
 
 							else
 							{
-								if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Type]", L"Device_Model_Type", typeInput))
-								{
-									validTypeInput = true;
-
-									std::vector<std::wstring> models = getColumn(hStmt, true, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", typeInput);
-
-									std::wcout << std::endl << typeInput << L" Models:" << std::endl;
-
-									for (int i = 0; i < models.size(); i++)
-									{
-										std::wcout << models[i] << std::endl;
-									}
-								}
-								else
-								{
-									std::cout << std::endl << "Please enter a valid device type." << std::endl;
-								}
+								std::wcout << std::endl << L"Invalid device type." << std::endl;
 							}
-						}
-					}
-
-					else 
-					{
-						if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Name", modelInput))
-						{
-							validModelInput = true;
-							deviceModelId = getModelIdFromName(hStmt, modelInput);
-						}
-
-						else
-						{
-							std::cout << std::endl << "Please enter a valid device type." << std::endl;
 						}
 					}
 				}
 
-				std::wstring purchaseDate;
-				std::cout << "\nPlease enter the date in the following format: MM/DD/YYYY" << std::endl;
-				std::getline(std::wcin, purchaseDate);
-				std::cout << std::endl;
-
-				std::wstring deviceCost;
-				std::cout << "\nPlease enter the purchase price of the device." << std::endl;
-				std::getline(std::wcin, deviceCost);
-				std::cout << std::endl;
-
-				std::wstring operatingSystem;
-				std::cout << "\nPlease enter the operating system of the device." << std::endl;
-				std::getline(std::wcin, operatingSystem);
-				std::cout << std::endl;
-
-				while (true)
+				else
 				{
-					//Reading back the inputs to the user
-					std::cout << "\nAre these the correct inputs? \n" << std::endl;
-
-					std::cout << "Computer name: ";
-					std::wcout << deviceNumber << std::endl;
-
-					std::cout << "Serial tag: ";
-
-					//Serial numbers are in all caps 
-					std::transform(serialTag.begin(), serialTag.end(), serialTag.begin(), ::toupper);
-
-					std::wcout << serialTag << std::endl;
-
-					std::cout << "Device Model ID: ";
-					std::wcout << deviceModelId << std::endl;
-
-					std::cout << "Date Purchased: ";
-					std::wcout << purchaseDate << std::endl;
-
-					std::cout << "Purchase price: ";
-					std::wcout << deviceCost << std::endl;
-
-					std::cout << "Operating System: ";
-					std::wcout << operatingSystem << std::endl;
-
-					std::cout << "(Y/N)" << std::endl;
-
-					std::cin >> yesOrNo;
-
-					if (yesOrNo == 'y' || yesOrNo == 'Y') 
+					if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Name", deviceModel))
 					{
-						int retcode =newDevice(hStmt, deviceNumber, serialTag, deviceModelId, purchaseDate, deviceCost, operatingSystem, isTestServer);
-
-						if (retcode == 0) 
-						{
-							std::cout << std::endl << "SUCCESS." << std::endl << std::endl;
-
-							if (!isTestServer) 
-							{
-								writeLastDevice(deviceNumber);
-							}
-						}
-
-						else 
-						{
-							std::cout << std::endl << "FAILED." << std::endl << std::endl;
-						}
-
-						break;
+						modelFound = true;
 					}
-					else if (yesOrNo == 'n' || yesOrNo == 'N') {
-						std::cout << "Please try again." << std::endl;
-						break;
-					}
-					else {
-						std::cout << "Please enter a valid selection ." << std::endl;
+
+					else
+					{
+						std::wcout << std::endl << L"Invalid device model name." << std::endl;
 					}
 				}
 			}
+			
+			// Find Type from model ID
+			std::vector<std::wstring> deviceModelTableList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Table]", L"Device_Model_Name", deviceModel);
+			std::wstring deviceModelTable = deviceModelTableList[0];
+
+			
+
+			if (deviceModelTable == L"Computers")
+			{
+				bool computerQueryFinished = false;
+
+				std::wstring computerName;
+				std::wstring serialNumber;
+				std::wstring datePurchased;
+				std::wstring cost;
+				std::wstring operatingSystem;
+
+				while (!computerQueryFinished)
+				{
+					// Needs Computer_Name, Serial_Number, deviceModel (already given), Date_Purchased, Cost, Operating_System
+					std::wcout << std::endl << L"Please enter the computer's name:" << std::endl;
+					getline(std::wcin, computerName);
+					
+					std::wcout << std::endl << L"Please enter the computer's serial number:" << std::endl;
+					getline(std::wcin, serialNumber);
+					
+					std::wcout << std::endl << L"Please enter the date that the computer was purchased:" << std::endl;
+					getline(std::wcin, datePurchased);
+
+					std::wcout << std::endl << L"Please enter the price that the computer was purchased for:" << std::endl;
+					getline(std::wcin, cost);
+
+					std::wcout << std::endl << L"Please enter the operating system of the computer:" << std::endl;
+					getline(std::wcin, operatingSystem);
+
+					std::wcout << std::endl << L"Are these the correct inputs?" << std::endl;
+
+					std::wcout << L"Computer Name: " << computerName << std::endl;
+					std::transform(serialNumber.begin(), serialNumber.end(), serialNumber.begin(), ::toupper);
+					std::wcout << L"Serial Number: " << serialNumber << std::endl;
+					std::wcout << L"Computer Model: " << deviceModel << std::endl;
+					std::wcout << L"Date purchased: " << datePurchased << std::endl;
+					std::wcout << L"Price: " << cost << std::endl;
+					std::wcout << L"Operating System: " << operatingSystem << std::endl;
+					std::wcout << L"(Y/N)" << std::endl;
+
+					std::wstring confirmedInput;
+					getline(std::wcin, confirmedInput);
+
+					if (confirmedInput == L"Y" || confirmedInput == L"y")
+					{
+						computerQueryFinished = true;
+					}
+
+					else
+					{
+						std::wcout << std::endl << L"Please try again." << std::endl;
+					}
+				}
+
+				//Run query and make sure it worked.
+				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = newComputer(hStmt, computerName, serialNumber, deviceModelId, datePurchased, cost, operatingSystem, isTestServer);
+
+				if (newComputerRetCode == 0)
+				{
+					std::wcout << std::endl << L"SUCCESS." << std::endl;
+				}
+
+				else
+				{
+					std::wcout << L"FAILED.";
+				}
+
+			}
+			
+			else if (deviceModelTable == L"Peripherals")
+			{
+				bool peripheralQueryFinished = false;
+
+				std::wstring peripheralName;
+				std::wstring serialNumber;
+				std::wstring datePurchased;
+				std::wstring cost;
+				
+				while (!peripheralQueryFinished)
+				{
+					// Needs Computer_Name, Serial_Number, deviceModel (already given), Date_Purchased, Cost, Operating_System
+					std::wcout << std::endl << L"Please enter the devices' name:" << std::endl;
+					getline(std::wcin, peripheralName);
+
+					std::wcout << std::endl << L"Please enter the devices' serial number:" << std::endl;
+					getline(std::wcin, serialNumber);
+
+					std::wcout << std::endl << L"Please enter the date that the device was purchased:" << std::endl;
+					getline(std::wcin, datePurchased);
+
+					std::wcout << std::endl << L"Please enter the price that the device was purchased for:" << std::endl;
+					getline(std::wcin, cost);
+
+					std::wcout << std::endl << L"Are these the correct inputs?" << std::endl;
+
+					std::wcout << L"Device Name: " << peripheralName << std::endl;
+					std::transform(serialNumber.begin(), serialNumber.end(), serialNumber.begin(), ::toupper);
+					std::wcout << L"Serial Number: " << serialNumber << std::endl;
+					std::wcout << L"Device Model: " << deviceModel << std::endl;
+					std::wcout << L"Date purchased: " << datePurchased << std::endl;
+					std::wcout << L"Price: " << cost << std::endl;
+					std::wcout << L"(Y/N)" << std::endl;
+
+					std::wstring confirmedInput;
+					getline(std::wcin, confirmedInput);
+
+					if (confirmedInput == L"Y" || confirmedInput == L"y")
+					{
+						peripheralQueryFinished = true;
+					}
+
+					else
+					{
+						std::wcout << std::endl << L"Please try again." << std::endl;
+					}
+				}
+
+				//Run query and make sure it worked.
+				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = newPeripheral(hStmt, peripheralName, serialNumber, deviceModelId, datePurchased, cost, isTestServer);
+
+				if (newComputerRetCode == 0)
+				{
+					std::wcout << std::endl << L"SUCCESS." << std::endl;
+				}
+
+				else
+				{
+					std::wcout << std::endl << L"FAILED." << std::endl;
+				}
+			}
+
+			else if (deviceModelTable == L"Hotspots")
+			{
+				bool hotspotQueryFinished = false;
+
+				std::wstring phoneNumber;
+				std::wstring imeiNumber;
+				std::wstring datePurchased;
+				std::wstring cost;
+
+				while (!hotspotQueryFinished)
+				{
+					// Needs Computer_Name, Serial_Number, deviceModel (already given), Date_Purchased, Cost, Operating_System
+					std::wcout << std::endl << L"Please enter the hotspots' number:" << std::endl;
+					getline(std::wcin, phoneNumber);
+
+					std::wcout << std::endl << L"Please enter the hotspots' IMEI number:" << std::endl;
+					getline(std::wcin, imeiNumber);
+
+					std::wcout << std::endl << L"Please enter the date that the hotspot was purchased:" << std::endl;
+					getline(std::wcin, datePurchased);
+
+					std::wcout << std::endl << L"Please enter the price that the hotspot was purchased for:" << std::endl;
+					getline(std::wcin, cost);
+
+					std::wcout << std::endl << L"Are these the correct inputs?" << std::endl;
+
+					std::wcout << L"Hotspot Number: " << phoneNumber << std::endl;
+					std::transform(imeiNumber.begin(), imeiNumber.end(), imeiNumber.begin(), ::toupper);
+					std::wcout << L"IMEI Number: " << imeiNumber << std::endl;
+					std::wcout << L"Device Model: " << deviceModel << std::endl;
+					std::wcout << L"Date purchased: " << datePurchased << std::endl;
+					std::wcout << L"Price: " << cost << std::endl;
+					std::wcout << L"(Y/N)" << std::endl;
+
+					std::wstring confirmedInput;
+					getline(std::wcin, confirmedInput);
+
+					if (confirmedInput == L"Y" || confirmedInput == L"y")
+					{
+						hotspotQueryFinished = true;
+					}
+
+					else
+					{
+						std::wcout << std::endl << L"Please try again." << std::endl;
+					}
+				}
+
+				//Run query and make sure it worked.
+				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = newHotspot(hStmt, phoneNumber, imeiNumber, deviceModelId, datePurchased, cost, isTestServer);
+
+				if (newComputerRetCode == 0)
+				{
+					std::wcout << std::endl << L"SUCCESS." << std::endl;
+				}
+
+				else
+				{
+					std::wcout << std::endl << L"FAILED." << std::endl;
+				}
+			}
+
+			else if (deviceModelTable == L"Office_Equipment")
+			{
+				bool equipmentQueryFinished = false;
+
+				std::wstring equipmentName;
+				std::wstring serialNumber;
+				std::wstring datePurchased;
+				std::wstring cost;
+
+				while (!equipmentQueryFinished)
+				{
+					// Needs Computer_Name, Serial_Number, deviceModel (already given), Date_Purchased, Cost, Operating_System
+					std::wcout << std::endl << L"Please enter the equipment's number:" << std::endl;
+					getline(std::wcin, equipmentName);
+
+					std::wcout << std::endl << L"Please enter the equipment's serial number:" << std::endl;
+					getline(std::wcin, serialNumber);
+
+					std::wcout << std::endl << L"Please enter the date that the equipment was purchased:" << std::endl;
+					getline(std::wcin, datePurchased);
+
+					std::wcout << std::endl << L"Please enter the price that the eqipment was purchased for:" << std::endl;
+					getline(std::wcin, cost);
+
+					std::wcout << std::endl << L"Are these the correct inputs?" << std::endl;
+
+					std::wcout << L"Equipment number: " << equipmentName << std::endl;
+					std::transform(serialNumber.begin(), serialNumber.end(), serialNumber.begin(), ::toupper);
+					std::wcout << L"Serial Number: " << serialNumber << std::endl;
+					std::wcout << L"Device Model: " << deviceModel << std::endl;
+					std::wcout << L"Date purchased: " << datePurchased << std::endl;
+					std::wcout << L"Price: " << cost << std::endl;
+					std::wcout << L"(Y/N)" << std::endl;
+
+					std::wstring confirmedInput;
+					getline(std::wcin, confirmedInput);
+
+					if (confirmedInput == L"Y" || confirmedInput == L"y")
+					{
+						equipmentQueryFinished = true;
+					}
+
+					else
+					{
+						std::wcout << std::endl << L"Please try again." << std::endl;
+					}
+				}
+
+				//Run query and make sure it worked.
+				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = newEquipment(hStmt, equipmentName, serialNumber, deviceModelId, datePurchased, cost, isTestServer);
+
+				if (newComputerRetCode == 0)
+				{
+					std::wcout << std::endl << L"SUCCESS." << std::endl;
+				}
+
+				else
+				{
+					std::wcout << std::endl << L"FAILED." << std::endl;
+				}
+			}
+
+			else
+			{
+				std::wcout << std::endl << L"An error occured when selecting a table to place the new device into. Please review the 'Device_Models' table in the database." << std::endl;
+				enterKey();
+				return -1;
+			}
+
 			break;
 		}
 
@@ -630,13 +903,12 @@ int main()
 					break;
 				}
 
-				bool isValid = checkValid(hStmt, L"[Devices]", L"[Device_Name]", L"Device_Name", deviceNumber);
+				// Check all 4 device tables, branch accordingly
 
-				if (!isValid)
-				{
-					std::wcout << L"Unable to find device with the name: " << deviceNumber << L"." << std::endl << std::endl;
-					break;
-				}
+				bool isInComputers = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
+				bool isInPeripherals = checkValid(hStmt, L"[Peripherals]", L"[Peripheral_Name]", L"Peripheral_Name", deviceNumber);
+				bool isInHotspots = checkValid(hStmt, L"[Hotspots]", L"[IMEI_Number]", L"IMEI_Number", deviceNumber);
+				bool isInEquipment = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
 
 				//Confirm delete
 
@@ -645,8 +917,35 @@ int main()
 
 				std::wcin >> confirmChoice;
 
+				int retcode;
+
 				if (confirmChoice == L"Y" or confirmChoice == L"y") {
-					int retcode = removeDevice(hStmt, deviceNumber);
+					if (isInComputers)
+					{
+						retcode = removeComputer(hStmt, deviceNumber);
+					}
+
+					else if (isInPeripherals)
+					{
+						retcode = removePeripheral(hStmt, deviceNumber);
+					}
+
+					else if (isInHotspots)
+					{
+						retcode = removeHotspot(hStmt, deviceNumber);
+					}
+
+					else if (isInEquipment)
+					{
+						retcode = removeEquipment(hStmt, deviceNumber);
+					}
+
+					else
+					{
+						std::wcout << L"Unable to find device with the name: " << deviceNumber << L"." << std::endl << std::endl;
+						break;
+					}
+
 					if (retcode == 0) 
 					{
 						std::cout << std::endl << "SUCCESS." << std::endl << std::endl;
@@ -664,7 +963,8 @@ int main()
 
 		case '7':
 		{
-			
+			int retcode = recordEmployeeTransaction( hStmt, L"1", L"Test Person");
+			break;
 		}
 
 		// Prints the last entered device

@@ -23,9 +23,85 @@
 
 #include <wchar.h>
 
+int assignComputer(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring employeeEmailAddress, std::wstring issueDate, std::wstring firstUser) {
+	/*
+
+		Assigns an existing device to an employee. The device name and employee email address is provided by the user.
+
+	*/
+
+	// Verify inputs
+	bool dateValid = isValidDate(issueDate);
+
+	if (!dateValid)
+	{
+		return -1;
+	}
 
 
-int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employeeEmailAddress, std::wstring issueDate, std::wstring firstUser) {
+	while (true)
+	{
+		// Get employee ID from email
+		std::wstring employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
+		std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
+
+		//Bind variables
+		SQLLEN    strlen = SQL_NTS;
+		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
+		SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)issueDate.c_str(), 0, &strlen);
+		SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)firstUser.c_str(), 0, &strlen);
+		SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		//Generate Query
+		std::wstring assignDeviceQuery = L"UPDATE [Computers] SET Currently_Issued_To = ?, Date_Issued = ?, Issued_New = ? WHERE Computer_Name = ?";
+
+		//Execute
+		SQLRETURN statementResult;
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)assignDeviceQuery.c_str(), SQL_NTS);
+
+		//TRIM
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		std::wstring trimDateQuery = L"UPDATE Computers SET Date_Issued = RTRIM(Date_Issued) WHERE Computer_Name = ?";
+		SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)trimDateQuery.c_str(), SQL_NTS);
+		std::wstring trimNewQuery = L"UPDATE Computers SET Issued_New = RTRIM(Issued_New) WHERE Computer_Name = ?";
+		result = SQLExecDirect(hStmt, (wchar_t*)trimNewQuery.c_str(), SQL_NTS);
+
+
+		//Rebind
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		// Check query result UPDATE TO INCLUDE ALL NEW INFO
+		std::wstring checkUserResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Computers] WHERE Computer_Name = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkUserResultQuery.c_str(), SQL_NTS);
+		std::wstring checkUserResult = getResult(hStmt, 1);
+
+		std::wstring checkDateResultQuery = L"SELECT TOP (1) [Date_Issued] FROM [Computers] WHERE Computer_Name = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDateResultQuery.c_str(), SQL_NTS);
+		std::wstring checkDateResult = getResult(hStmt, 1);
+
+		std::wstring checkNewResultQuery = L"SELECT TOP (1) [Issued_New] FROM [Computers] WHERE Computer_Name = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkNewResultQuery.c_str(), SQL_NTS);
+		std::wstring checkNewResult = getResult(hStmt, 1);
+
+		// Copy and reformat values to compare against
+		std::wstring dateFromDB = issueDate;
+		std::wstring newBoolFromDB = firstUser;
+
+		if (checkUserResult == employeeID && checkDateResult == dateFromDB && checkNewResult == newBoolFromDB) {
+			int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"3", employee);
+			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+			return 0;
+		}
+
+		else {
+			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+			return -1;
+		}
+	}
+}
+
+int assignPeripheral(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employeeEmailAddress, std::wstring issueDate, std::wstring firstUser) {
 	/*
 
 		Assigns an existing device to an employee. The device name and employee email address is provided by the user.
@@ -45,6 +121,7 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 	{
 		// Get employee ID from email
 		std::wstring employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
+		std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
 
 		//Bind variables
 		SQLLEN    strlen = SQL_NTS;
@@ -54,7 +131,7 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 		SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
 		//Generate Query
-		std::wstring assignDeviceQuery = L"UPDATE [Devices] SET Currently_Issued_To = ?, Date_Issued = ?, Issued_New = ? WHERE Device_Name = ?";
+		std::wstring assignDeviceQuery = L"UPDATE [Peripherals] SET Currently_Issued_To = ?, Date_Issued = ?, Issued_New = ? WHERE Peripheral_Name = ?";
 
 		//Execute
 		SQLRETURN statementResult;
@@ -63,9 +140,9 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 		//TRIM
 		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
-		std::wstring trimDateQuery = L"UPDATE Devices SET Date_Issued = RTRIM(Date_Issued) WHERE Device_Name = ?";
+		std::wstring trimDateQuery = L"UPDATE Peripherals SET Date_Issued = RTRIM(Date_Issued) WHERE Peripheral_Name = ?";
 		SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)trimDateQuery.c_str(), SQL_NTS);
-		std::wstring trimNewQuery = L"UPDATE Devices SET Issued_New = RTRIM(Issued_New) WHERE Device_Name = ?";
+		std::wstring trimNewQuery = L"UPDATE Peripherals SET Issued_New = RTRIM(Issued_New) WHERE Peripherale_Name = ?";
 		result = SQLExecDirect(hStmt, (wchar_t*)trimNewQuery.c_str(), SQL_NTS);
 
 
@@ -73,15 +150,15 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
 		// Check query result UPDATE TO INCLUDE ALL NEW INFO
-		std::wstring checkUserResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Devices] WHERE Device_Name = ?";
+		std::wstring checkUserResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Peripherals] WHERE Peripheral_Name = ?";
 		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkUserResultQuery.c_str(), SQL_NTS);
 		std::wstring checkUserResult = getResult(hStmt, 1);
 
-		std::wstring checkDateResultQuery = L"SELECT TOP (1) [Date_Issued] FROM [Devices] WHERE Device_Name = ?";
+		std::wstring checkDateResultQuery = L"SELECT TOP (1) [Date_Issued] FROM [Peripherals] WHERE Peripheral_Name = ?";
 		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDateResultQuery.c_str(), SQL_NTS);
 		std::wstring checkDateResult = getResult(hStmt, 1);
 
-		std::wstring checkNewResultQuery = L"SELECT TOP (1) [Issued_New] FROM [Devices] WHERE Device_Name = ?";
+		std::wstring checkNewResultQuery = L"SELECT TOP (1) [Issued_New] FROM [Peripherals] WHERE Peripheral_Name = ?";
 		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkNewResultQuery.c_str(), SQL_NTS);
 		std::wstring checkNewResult = getResult(hStmt, 1);
 
@@ -90,6 +167,7 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 		std::wstring newBoolFromDB = firstUser;
 
 		if (checkUserResult == employeeID && checkDateResult == dateFromDB && checkNewResult == newBoolFromDB) {
+			int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"3", employee);
 			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 			return 0;
 		}
@@ -101,7 +179,151 @@ int assignDevice(SQLHSTMT hStmt, std::wstring deviceNumber , std::wstring employ
 	}
 }
 
-int unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
+int assignHotspot(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring employeeEmailAddress, std::wstring issueDate) {
+	/*
+
+		Assigns an existing device to an employee. The device name and employee email address is provided by the user.
+
+	*/
+
+	// Verify inputs
+	bool dateValid = isValidDate(issueDate);
+
+	if (!dateValid)
+	{
+		return -1;
+	}
+
+
+	while (true)
+	{
+		// Get employee ID from email
+		std::wstring employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
+		std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
+
+		//Bind variables
+		SQLLEN    strlen = SQL_NTS;
+		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
+		SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)issueDate.c_str(), 0, &strlen);
+		SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		//Generate Query
+		std::wstring assignDeviceQuery = L"UPDATE [Hotspots] SET Currently_Issued_To = ?, Date_Issued = ? WHERE IMEI = ?";
+
+		//Execute
+		SQLRETURN statementResult;
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)assignDeviceQuery.c_str(), SQL_NTS);
+
+		//TRIM
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		std::wstring trimDateQuery = L"UPDATE Hotspots SET Date_Issued = RTRIM(Date_Issued) WHERE IMEI = ?";
+		SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)trimDateQuery.c_str(), SQL_NTS);
+		std::wstring trimNewQuery = L"UPDATE Hotspots SET Issued_New = RTRIM(Issued_New) WHERE IMEI = ?";
+		result = SQLExecDirect(hStmt, (wchar_t*)trimNewQuery.c_str(), SQL_NTS);
+
+
+		//Rebind
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		// Check query result UPDATE TO INCLUDE ALL NEW INFO
+		std::wstring checkUserResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Hotspots] WHERE IMEI = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkUserResultQuery.c_str(), SQL_NTS);
+		std::wstring checkUserResult = getResult(hStmt, 1);
+
+		std::wstring checkDateResultQuery = L"SELECT TOP (1) [Date_Issued] FROM [Hotspots] WHERE IMEI = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDateResultQuery.c_str(), SQL_NTS);
+		std::wstring checkDateResult = getResult(hStmt, 1);
+
+		// Copy and reformat values to compare against
+		std::wstring dateFromDB = issueDate;
+
+		if (checkUserResult == employeeID && checkDateResult == dateFromDB) {
+			int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"3", employee);
+			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+			return 0;
+		}
+
+		else {
+			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+			return -1;
+		}
+	}
+}
+
+int assignEquipment(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring employeeEmailAddress, std::wstring issueDate) {
+	/*
+
+		Assigns an existing device to an employee. The device name and employee email address is provided by the user.
+
+	*/
+
+	// Verify inputs
+	bool dateValid = isValidDate(issueDate);
+
+	if (!dateValid)
+	{
+		return -1;
+	}
+
+
+	while (true)
+	{
+		// Get employee ID from email
+		std::wstring employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
+		std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
+
+		//Bind variables
+		SQLLEN    strlen = SQL_NTS;
+		SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
+		SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)issueDate.c_str(), 0, &strlen);
+		SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		//Generate Query
+		std::wstring assignDeviceQuery = L"UPDATE [Office_Equipment] SET Currently_Issued_To = ?, Date_Issued = ? WHERE Equipment_Name = ?";
+
+		//Execute
+		SQLRETURN statementResult;
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)assignDeviceQuery.c_str(), SQL_NTS);
+
+		//TRIM
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		std::wstring trimDateQuery = L"UPDATE Office_Equipment SET Date_Issued = RTRIM(Date_Issued) WHERE Equipment_Name = ?";
+		SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)trimDateQuery.c_str(), SQL_NTS);
+		std::wstring trimNewQuery = L"UPDATE Office_Equipment SET Issued_New = RTRIM(Issued_New) WHERE Equipment_Name = ?";
+		result = SQLExecDirect(hStmt, (wchar_t*)trimNewQuery.c_str(), SQL_NTS);
+
+
+		//Rebind
+		bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+		// Check query result UPDATE TO INCLUDE ALL NEW INFO
+		std::wstring checkUserResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Office_Equipment] WHERE Equipment_Name = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkUserResultQuery.c_str(), SQL_NTS);
+		std::wstring checkUserResult = getResult(hStmt, 1);
+
+		std::wstring checkDateResultQuery = L"SELECT TOP (1) [Date_Issued] FROM [Office_Equipment] WHERE Equipment_Name = ?";
+		statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkDateResultQuery.c_str(), SQL_NTS);
+		std::wstring checkDateResult = getResult(hStmt, 1);
+
+		// Copy and reformat values to compare against
+		std::wstring dateFromDB = issueDate;
+
+		if (checkUserResult == employeeID && checkDateResult == dateFromDB) {
+			int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"3", employee);
+			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+			return 0;
+		}
+
+		else {
+			SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+			return -1;
+		}
+	}
+}
+
+int unassignComputer(SQLHSTMT hStmt, std::wstring deviceNumber) {
 
 	/*
 
@@ -114,7 +336,13 @@ int unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
 
 	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
-	std::wstring unassignDevice = L"UPDATE [Devices] SET Currently_Issued_To = NULL WHERE Device_Name = ?";
+	std::wstring getEmployee = L"SELECT [Currently_Issued_To] FROM [Computers] WHERE Computer_Name = ?";
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getEmployee.c_str(), SQL_NTS);
+	std::wstring employeeID = getResult(hStmt, 1);
+	std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
+
+	bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+	std::wstring unassignDevice = L"UPDATE [Computers] SET Currently_Issued_To = NULL WHERE Computer_Name = ?";
 
 	//Prepare and execute the query
 	SQLRETURN prepareResult = SQLPrepare(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
@@ -125,27 +353,181 @@ int unassignDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
 	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
 
 	// Check query result
-	std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Devices] WHERE Device_Name = ?";
-	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+	std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Computers] WHERE Computer_Name = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
 
 	std::wstring checkExecResult = getResult(hStmt, 1);
 
 	std::wstring nullString = L"";
 
 	if (checkExecResult == nullString && (updateStatementResult != -1 && updateStatementResult != 100)) {
-		return 0;
+		int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"4", employee);
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
 	}
 
 	else {
 		return -1;
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
-		
+
 	}
 
 }
 
-int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag, std::wstring deviceModelId, std::wstring purchaseDate, std::wstring deviceCost, std::wstring operatingSystem, bool isTestServer) {
+int unassignPeripheral(SQLHSTMT hStmt, std::wstring deviceNumber) {
+
+	/*
+
+		Runs the query to unassign a device from a user, freeing it.
+
+	*/
+
+	//Binding deviceNumber to the first parameter
+	SQLLEN strlen = SQL_NTS;
+
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+	std::wstring getEmployee = L"SELECT [Currently_Issued_To] FROM [Peripherals] WHERE Peripheral_Name = ?";
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getEmployee.c_str(), SQL_NTS);
+	std::wstring employeeID = getResult(hStmt, 1);
+	std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
+
+	bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+	std::wstring unassignDevice = L"UPDATE [Peripherals] SET Currently_Issued_To = NULL WHERE Peripheral_Name = ?";
+
+	//Prepare and execute the query
+	SQLRETURN prepareResult = SQLPrepare(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
+
+	SQLRETURN updateStatementResult = SQLExecute(hStmt);
+
+	//Rebind
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+	// Check query result
+	std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Peripherals] WHERE Peripheral_Name = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkExecResult = getResult(hStmt, 1);
+
+	std::wstring nullString = L"";
+
+	if (checkExecResult == nullString && (updateStatementResult != -1 && updateStatementResult != 100)) {
+		int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"4", employee);
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else {
+		return -1;
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	}
+
+}
+
+int unassignHotspot(SQLHSTMT hStmt, std::wstring deviceNumber) {
+
+	/*
+
+		Runs the query to unassign a device from a user, freeing it.
+
+	*/
+
+	//Binding deviceNumber to the first parameter
+	SQLLEN strlen = SQL_NTS;
+
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+	std::wstring getEmployee = L"SELECT [Currently_Issued_To] FROM [Hotspots] WHERE IMEI = ?";
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getEmployee.c_str(), SQL_NTS);
+	std::wstring employeeID = getResult(hStmt, 1);
+
+	std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
+
+	std::wstring unassignDevice = L"UPDATE [Hotspots] SET Currently_Issued_To = NULL WHERE IMEI = ?";
+	bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+	//Prepare and execute the query
+	SQLRETURN prepareResult = SQLPrepare(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
+
+	SQLRETURN updateStatementResult = SQLExecute(hStmt);
+
+	//Rebind
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+	// Check query result
+	std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Hotspots] WHERE IMEI = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkExecResult = getResult(hStmt, 1);
+
+	std::wstring nullString = L"";
+
+	if (checkExecResult == nullString && (updateStatementResult != -1 && updateStatementResult != 100)) {
+		int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"4", employee);
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else {
+		return -1;
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	}
+
+}
+
+int unassignEquipment(SQLHSTMT hStmt, std::wstring deviceNumber) {
+
+	/*
+
+		Runs the query to unassign a device from a user, freeing it.
+
+	*/
+
+	//Binding deviceNumber to the first parameter
+	SQLLEN strlen = SQL_NTS;
+	
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+	std::wstring getEmployee = L"SELECT [Currently_Issued_To] FROM [Office_Equipment] WHERE Equipment_Name = ?";
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getEmployee.c_str(), SQL_NTS);
+	std::wstring employeeID = getResult(hStmt, 1);
+	std::wstring employee = getEmployeeNameFromID(hStmt, employeeID);
+
+	bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+	std::wstring unassignDevice = L"UPDATE [Office_Equipment] SET Currently_Issued_To = NULL WHERE Equipment_Name = ?";
+
+	//Prepare and execute the query
+	SQLRETURN prepareResult = SQLPrepare(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
+
+	SQLRETURN updateStatementResult = SQLExecute(hStmt);
+
+	//Rebind
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+
+	// Check query result
+	std::wstring checkExecResultQuery = L"SELECT TOP (1) [Currently_Issued_To] FROM [Office_Equipment] WHERE Equipment_Name = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkExecResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkExecResult = getResult(hStmt, 1);
+
+	std::wstring nullString = L"";
+
+	if (checkExecResult == nullString && (updateStatementResult != -1 && updateStatementResult != 100)) {
+		int transactionResult = recordDeviceTransaction(hStmt, deviceNumber, L"4", employee);
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else {
+		return -1;
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	}
+
+}
+
+int newComputer(SQLHSTMT hStmt, std::wstring computerName, std::wstring serialNumber, std::wstring deviceModelId, std::wstring datePurchased, std::wstring cost, std::wstring operatingSystem, bool isTestServer) {
 	/*
 	*
 		Enter a new device into the data base. The program will ask for its name, serial number, model, who it's going to be issued to, and the date
@@ -154,7 +536,7 @@ int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag,
 	*/
 
 	// Verify inputs
-	bool dateValid = isValidDate(purchaseDate);
+	bool dateValid = isValidDate(datePurchased);
 
 	if (!dateValid)
 	{
@@ -164,23 +546,23 @@ int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag,
 
 	//Bind parameters
 	SQLLEN strlen = SQL_NTS;
-	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
-	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialTag.c_str(), 0, &strlen);
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)computerName.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialNumber.c_str(), 0, &strlen);
 	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
-	SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)purchaseDate.c_str(), 0, &strlen);
-	SQLRETURN bindResult5 = SQLBindParameter(hStmt, 5, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceCost.c_str(), 0, &strlen);
+	SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	SQLRETURN bindResult5 = SQLBindParameter(hStmt, 5, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)cost.c_str(), 0, &strlen);
 	SQLRETURN bindResult6 = SQLBindParameter(hStmt, 6, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)operatingSystem.c_str(), 0, &strlen);
 
 	//Generate query
-	std::wstring addDeviceQuery = L"INSERT INTO Devices (Device_Name, Serial_Tag, Device_Model_ID, Date_Purchased, Cost, Operating_System) VALUES (?, ?, ?, ?, ?, ?)";
-
+	std::wstring addDeviceQuery = L"INSERT INTO Computers (Computer_Name, Serial_Number, Device_Model_ID, Date_Purchased, Cost, Operating_System) VALUES (?, ?, ?, ?, ?, ?)";
+	
 	//Execute 
 	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
 
 	if (result != 0 && result != 1)
-	{	
+	{
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
-		return - 1;
+		return -1;
 	}
 
 	// Free binds
@@ -188,51 +570,333 @@ int newDevice(SQLHSTMT hStmt, std::wstring deviceNumber, std::wstring serialTag,
 
 
 	//THis program tends to put a lot of space characters to the right
-	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
-	addDeviceQuery = L"UPDATE Devices SET Device_Name = RTRIM(Device_Name) WHERE Device_Name = ?";
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)computerName.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Computers SET Computer_Name = RTRIM(Computer_Name) WHERE Computer_Name = ?";
 	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
 
-	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialTag.c_str(), 0, &strlen);
-	addDeviceQuery = L"UPDATE Devices SET Serial_Tag = RTRIM(Serial_Tag) WHERE Serial_Tag = ?";
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialNumber.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Computers SET Serial_Number = RTRIM(Serial_Number) WHERE Serial_Number = ?";
 	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
 
 	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
-	addDeviceQuery = L"UPDATE Devices SET Device_Model_ID = RTRIM(Device_Model_ID) WHERE Device_Model_ID = ?";
+	addDeviceQuery = L"UPDATE Computers SET Device_Model_ID = RTRIM(Device_Model_ID) WHERE Device_Model_ID = ?";
 	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
 
-	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)purchaseDate.c_str(), 0, &strlen);
-	addDeviceQuery = L"UPDATE Devices SET Date_Purchased = RTRIM(Date_Purchased) WHERE Date_Purchased = ?";
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Computers SET Date_Purchased = RTRIM(Date_Purchased) WHERE Date_Purchased = ?";
 	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
 
 	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)operatingSystem.c_str(), 0, &strlen);
-	addDeviceQuery = L"UPDATE Devices SET Date_Purchased = RTRIM(Date_Purchased) WHERE Date_Purchased = ?";
+	addDeviceQuery = L"UPDATE Computers SET Operating_System = RTRIM(Operating_System) WHERE Operating_System = ?";
 	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
 
 	//Free parameters
 	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
 	// Get Name aand Tag From DB
-	SQLRETURN bindName = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+	SQLRETURN bindName = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)computerName.c_str(), 0, &strlen);
 
 	std::wstring statementResult;
-	std::wstring checkNameResultQuery = L"SELECT TOP (1) [Device_Name] FROM [Devices] WHERE Device_Name = ?";
+	std::wstring checkNameResultQuery = L"SELECT TOP (1) [Computer_Name] FROM [Computers] WHERE Computer_Name = ?";
 
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkNameResultQuery.c_str(), SQL_NTS);
 
 	std::wstring checkName = getResult(hStmt, 1);
 
-	std::wstring checkTagResultQuery = L"SELECT TOP (1) [Serial_Tag] FROM [Devices] WHERE Device_Name = ?";
+	std::wstring checkTagResultQuery = L"SELECT TOP (1) [Serial_Number] FROM [Computers] WHERE Computer_Name = ?";
 
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkTagResultQuery.c_str(), SQL_NTS);
 
 	std::wstring checkTag = getResult(hStmt, 1);
 
 	// Copy and reformat values to compare against
-	std::wstring deviceNumberFromDB = deviceNumber;
-	std::wstring deviceSerialFromDB = serialTag;
+	std::wstring deviceNumberFromDB = computerName;
+	std::wstring deviceSerialFromDB = serialNumber;
+
+	if (checkName == deviceNumberFromDB && checkTag == deviceSerialFromDB) {
+		int transactionResult = recordDeviceTransaction(hStmt, computerName, L"1");
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else {
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+}
+
+int newPeripheral(SQLHSTMT hStmt, std::wstring peripheralName, std::wstring serialNumber, std::wstring deviceModelId, std::wstring datePurchased, std::wstring cost, bool isTestServer) {
+	/*
+	*
+		Enter a new device into the data base. The program will ask for its name, serial number, model, who it's going to be issued to, and the date
+		it will be issued.
+
+	*/
+
+	// Verify inputs
+	bool dateValid = isValidDate(datePurchased);
+
+	if (!dateValid)
+	{
+		return -1;
+	}
+
+
+	//Bind parameters
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)peripheralName.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialNumber.c_str(), 0, &strlen);
+	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+	SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	SQLRETURN bindResult5 = SQLBindParameter(hStmt, 5, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)cost.c_str(), 0, &strlen);
+
+	//Generate query
+	std::wstring addDeviceQuery = L"INSERT INTO Peripherals (Peripheral_Name, Serial_Number, Device_Model_ID, Date_Purchased, Cost) VALUES (?, ?, ?, ?, ?)";
+
+	//Execute 
+	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+
+	// Free binds
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+
+	//THis program tends to put a lot of space characters to the right
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)peripheralName.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Peripherals SET Peripheral_Name = RTRIM(Peripheral_Name) WHERE Peripheral_Name = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialNumber.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Peripherals SET Serial_Number = RTRIM(Serial_Number) WHERE Serial_Number = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Peripherals SET Device_Model_ID = RTRIM(Device_Model_ID) WHERE Device_Model_ID = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Peripherals SET Date_Purchased = RTRIM(Date_Purchased) WHERE Date_Purchased = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	//Free parameters
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	// Get Name aand Tag From DB
+	SQLRETURN bindName = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)peripheralName.c_str(), 0, &strlen);
+
+	std::wstring statementResult;
+	std::wstring checkNameResultQuery = L"SELECT TOP (1) [Peripheral_Name] FROM [Peripherals] WHERE Peripheral_Name = ?";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkNameResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkName = getResult(hStmt, 1);
+
+	std::wstring checkTagResultQuery = L"SELECT TOP (1) [Serial_Number] FROM [Peripherals] WHERE Peripheral_Name = ?";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkTagResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkTag = getResult(hStmt, 1);
+
+	// Copy and reformat values to compare against
+	std::wstring deviceNumberFromDB = peripheralName;
+	std::wstring deviceSerialFromDB = serialNumber;
 
 
 	if (checkName == deviceNumberFromDB && checkTag == deviceSerialFromDB) {
+		int transactionResult = recordDeviceTransaction(hStmt, peripheralName, L"1");
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else {
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+}
+
+int newHotspot(SQLHSTMT hStmt, std::wstring phoneNumber, std::wstring imeiNumber, std::wstring deviceModelId, std::wstring datePurchased, std::wstring cost, bool isTestServer) {
+	/*
+	*
+		Enter a new device into the data base. The program will ask for its name, serial number, model, who it's going to be issued to, and the date
+		it will be issued.
+
+	*/
+
+	// Verify inputs
+	bool dateValid = isValidDate(datePurchased);
+
+	if (!dateValid)
+	{
+		return -1;
+	}
+
+
+	//Bind parameters
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)phoneNumber.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)imeiNumber.c_str(), 0, &strlen);
+	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+	SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	SQLRETURN bindResult5 = SQLBindParameter(hStmt, 5, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)cost.c_str(), 0, &strlen);
+
+	//Generate query
+	std::wstring addDeviceQuery = L"INSERT INTO Hotspots (Phone_Number, IMEI, Device_Model_ID, Date_Purchased, Cost) VALUES (?, ?, ?, ?, ?)";
+
+	//Execute 
+	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+
+	// Free binds
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+
+	//THis program tends to put a lot of space characters to the right
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)phoneNumber.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Hotspots SET Phone_Number = RTRIM(Phone_Number) WHERE Phone_Number = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)imeiNumber.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Hotspots SET IMEI = RTRIM(IMEI) WHERE IMEI = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Hotspots SET Device_Model_ID = RTRIM(Device_Model_ID) WHERE Device_Model_ID = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Hotspots SET Date_Purchased = RTRIM(Date_Purchased) WHERE Date_Purchased = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	//Free parameters
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	// Get Name aand Tag From DB
+	SQLRETURN bindName = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)phoneNumber.c_str(), 0, &strlen);
+
+	std::wstring statementResult;
+	std::wstring checkNameResultQuery = L"SELECT TOP (1) [Phone_Number] FROM [Hotspots] WHERE Phone_Number = ?";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkNameResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkName = getResult(hStmt, 1);
+
+	std::wstring checkTagResultQuery = L"SELECT TOP (1) [IMEI] FROM [Hotspots] WHERE Phone_Number = ?";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkTagResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkTag = getResult(hStmt, 1);
+
+	// Copy and reformat values to compare against
+	std::wstring deviceNumberFromDB = phoneNumber;
+	std::wstring deviceSerialFromDB = imeiNumber;
+
+
+	if (checkName == deviceNumberFromDB && checkTag == deviceSerialFromDB) {
+		int transactionResult = recordDeviceTransaction(hStmt, imeiNumber, L"1");
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else {
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+}
+
+int newEquipment(SQLHSTMT hStmt, std::wstring equipmentName, std::wstring serialNumber, std::wstring deviceModelId, std::wstring datePurchased, std::wstring cost, bool isTestServer) {
+	/*
+	*
+		Enter a new device into the data base. The program will ask for its name, serial number, model, who it's going to be issued to, and the date
+		it will be issued.
+
+	*/
+
+	// Verify inputs
+	bool dateValid = isValidDate(datePurchased);
+
+	if (!dateValid)
+	{
+		return -1;
+	}
+
+
+	//Bind parameters
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)equipmentName.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialNumber.c_str(), 0, &strlen);
+	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+	SQLRETURN bindResult4 = SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	SQLRETURN bindResult5 = SQLBindParameter(hStmt, 5, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)cost.c_str(), 0, &strlen);
+
+	//Generate query
+	std::wstring addDeviceQuery = L"INSERT INTO Office_Equipment (Equipment_Name, Serial_Number, Device_Model_ID, Date_Purchased, Cost) VALUES (?, ?, ?, ?, ?)";
+
+	//Execute 
+	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+
+	// Free binds
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+
+	//THis program tends to put a lot of space characters to the right
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)equipmentName.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Office_Equipment SET Equipment_Name = RTRIM(Equipment_Name) WHERE Equipment_Name = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)serialNumber.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Office_Equipment SET Serial_Number = RTRIM(Serial_Number) WHERE Serial_Number = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Office_Equipment SET Device_Model_ID = RTRIM(Device_Model_ID) WHERE Device_Model_ID = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)datePurchased.c_str(), 0, &strlen);
+	addDeviceQuery = L"UPDATE Office_Equipment SET Date_Purchased = RTRIM(Date_Purchased) WHERE Date_Purchased = ?";
+	result = SQLExecDirect(hStmt, (wchar_t*)addDeviceQuery.c_str(), SQL_NTS);
+
+	//Free parameters
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	// Get Name aand Tag From DB
+	SQLRETURN bindName = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)equipmentName.c_str(), 0, &strlen);
+
+	std::wstring statementResult;
+	std::wstring checkNameResultQuery = L"SELECT TOP (1) [Equipment_Name] FROM [Office_Equipment] WHERE Equipment_Name = ?";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkNameResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkName = getResult(hStmt, 1);
+
+	std::wstring checkTagResultQuery = L"SELECT TOP (1) [Serial_Number] FROM [Office_Equipment] WHERE Equipment_Name = ?";
+
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)checkTagResultQuery.c_str(), SQL_NTS);
+
+	std::wstring checkTag = getResult(hStmt, 1);
+
+	// Copy and reformat values to compare against
+	std::wstring deviceNumberFromDB = equipmentName;
+	std::wstring deviceSerialFromDB = serialNumber;
+
+
+	if (checkName == deviceNumberFromDB && checkTag == deviceSerialFromDB) {
+		int transactionResult = recordDeviceTransaction(hStmt, equipmentName, L"1");
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return 0;
 	}
@@ -280,6 +944,7 @@ int addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employee
 
 	if (isValid && (retcode == 0 || retcode == 1)) 
 	{
+		int transactionRetCode = recordEmployeeTransaction(hStmt, L"1", employeeName);
 		return 0;
 	}
 	else 
@@ -298,18 +963,25 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 		PAUSE ON ERROR
 
 	*/
-
+	std::wstring employeeName = getEmployeeNameFromID(hStmt, employeeID);
 	SQLLEN strlen = SQL_NTS;
-
 	// Rebind after while loop (parameter is not allowed out of scope)
 	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
 
-	// Unassign device
-	std::wstring unassignAllDevices = L"UPDATE [Devices] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	// Unassign devices
+	std::wstring unassignAllDevices = L"UPDATE [Computers] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
 	SQLRETURN statementResult;
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 
+	unassignAllDevices = L"UPDATE [Peripherals] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 
+	unassignAllDevices = L"UPDATE [Hotspots] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
+
+	unassignAllDevices = L"UPDATE [Office_Equipment] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
+	
 	// Finally, remove the employee
 	std::wstring removeEmpQuery = L"DELETE FROM [Employees] WHERE Employee_ID = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)removeEmpQuery.c_str(), SQL_NTS);
@@ -318,6 +990,7 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 
 	if (!isValid && (statementResult != -1 && statementResult != 100))
 	{
+		int transactionRetCode = recordEmployeeTransaction(hStmt, L"2", employeeName);
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return 0;
 	}
@@ -330,7 +1003,7 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 	
 }
 
-int removeDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
+int removeComputer(SQLHSTMT hStmt, std::wstring computerName) {
 	/*
 
 		Remove a device from the database.
@@ -339,16 +1012,110 @@ int removeDevice(SQLHSTMT hStmt, std::wstring deviceNumber) {
 
 	//Binding deviceNumber to the first parameter
 	SQLLEN strlen = SQL_NTS;
-	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceNumber.c_str(), 0, &strlen);
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)computerName.c_str(), 0, &strlen);
 
 	//Delete the device
-	std::wstring unassignDevice = L"DELETE FROM [Devices] WHERE Device_Name = ?";
+	std::wstring unassignDevice = L"DELETE FROM [Computers] WHERE Computer_Name = ?";
 	SQLRETURN deleteResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
 
-	bool isValid = checkValid(hStmt, L"[Devices]", L"[Device_Name]", L"Device_Name", deviceNumber);
+	bool isValid = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", computerName);
 
 	if (!isValid && (deleteResult != -1 && deleteResult != 100))
 	{
+		int transactionResult = recordDeviceTransaction(hStmt, computerName, L"2");
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+}
+
+int removePeripheral(SQLHSTMT hStmt, std::wstring peripheralName) {
+	/*
+
+		Remove a device from the database.
+
+	*/
+
+	//Binding deviceNumber to the first parameter
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)peripheralName.c_str(), 0, &strlen);
+
+	//Delete the device
+	std::wstring unassignDevice = L"DELETE FROM [Peripherals] WHERE Peripheral_Name = ?";
+	SQLRETURN deleteResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
+
+	bool isValid = checkValid(hStmt, L"[Peripherals]", L"[Peripheral_Name]", L"Peripheral_Name", peripheralName);
+
+	if (!isValid && (deleteResult != -1 && deleteResult != 100))
+	{
+		int transactionResult = recordDeviceTransaction(hStmt, peripheralName, L"2");
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+}
+
+int removeHotspot(SQLHSTMT hStmt, std::wstring imeiNumber) {
+	/*
+
+		Remove a device from the database.
+
+	*/
+
+	//Binding deviceNumber to the first parameter
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)imeiNumber.c_str(), 0, &strlen);
+
+	//Delete the device
+	std::wstring unassignDevice = L"DELETE FROM [Hotspots] WHERE IMEI = ?";
+	SQLRETURN deleteResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
+
+	bool isValid = checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", imeiNumber);
+
+	if (!isValid && (deleteResult != -1 && deleteResult != 100))
+	{
+		int transactionResult = recordDeviceTransaction(hStmt, imeiNumber, L"2");
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return 0;
+	}
+
+	else
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+}
+
+int removeEquipment(SQLHSTMT hStmt, std::wstring equipmentName) {
+	/*
+
+		Remove a device from the database.
+
+	*/
+
+	//Binding deviceNumber to the first parameter
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)equipmentName.c_str(), 0, &strlen);
+
+	//Delete the device
+	std::wstring unassignDevice = L"DELETE FROM [Office_Equipment] WHERE Equipment_Name = ?";
+	SQLRETURN deleteResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignDevice.c_str(), SQL_NTS);
+
+	bool isValid = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", equipmentName);
+
+	if (!isValid && (deleteResult != -1 && deleteResult != 100))
+	{
+		int transactionResult = recordDeviceTransaction(hStmt, equipmentName, L"2");
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return 0;
 	}
@@ -434,7 +1201,69 @@ int writeReport(SQLHANDLE hStmt, int option)
 {
 	if (option == 1)
 	{
+
+		//Get number of results
+		std::wstring reportOneCount = L"SELECT COUNT [Device_Name] as [Phone Number], [Serial_Tag] as [IMEI], [Employee_Name] as [Checked Out To:], [Employee_Email] as [Email], [Date_Issued] as [Date Issued], [Cost] as [Hotspot Cost] FROM [Devices] JOIN [Device_Models] ON [Device_Models].[Device_Model_ID] = [Devices].[Device_Model_ID] LEFT JOIN [Employees] ON [Employees].[Employee_ID] = [Devices].[Currently_Issued_To] WHERE Device_Model_Type = 'Hotspot'";
+		SQLRETURN retcode = SQLExecDirect(hStmt, (SQLWCHAR*)reportOneCount.c_str(), SQL_NTS);
+
+
+
+		std::wstring reportOneQuery = L"SELECT [Device_Name] as [Phone Number], [Serial_Tag] as [IMEI], [Employee_Name] as [Checked Out To:], [Employee_Email] as [Email], [Date_Issued] as [Date Issued], [Cost] as [Hotspot Cost] FROM [Devices] JOIN [Device_Models] ON [Device_Models].[Device_Model_ID] = [Devices].[Device_Model_ID] LEFT JOIN [Employees] ON [Employees].[Employee_ID] = [Devices].[Currently_Issued_To] WHERE Device_Model_Type = 'Hotspot'";
+		retcode  = SQLExecDirect(hStmt, (SQLWCHAR*)reportOneQuery.c_str(), SQL_NTS);
+
+		// Get size the size needed for the result vector
+		short numColumns;
+		SQLNumResultCols(hStmt, &numColumns);
+
+		std::vector<std::wstring> columnNames = getAllResultColumnNames(hStmt);
+
+		std::wstring reportPath = L"ReportOne.csv";
+
+		std::wofstream reportOne(reportPath);
+
+		for (int i=0;i<numColumns;i++)
+		{
+			if (i != numColumns-1)
+			{
+				reportOne << columnNames[i] << L",";
+			}
+			else
+			{
+				reportOne << columnNames[i] << std::endl;
+			}
+			
+		}
+
+		long long rowCount;
+		SQLRowCount(hStmt, &rowCount);
 		
+		for (int i=0;i<rowCount;i++)
+		{
+			bool lastResult = false;
+
+			if (i == rowCount-1)
+			{
+				lastResult = true;
+			}
+
+			std::vector<std::wstring> resultsRow = getResultRow(hStmt, i+1, lastResult);
+
+			for (int j = 0; j < numColumns; j++)
+			{
+				if (j != numColumns - 1)
+				{
+					reportOne << resultsRow[j] << L",";
+				}
+				else
+				{
+					reportOne << L"$" << resultsRow[j] << std::endl;
+				}
+			}
+		}
+
+		reportOne.close();
+		
+		return 0;
 	}
 
 	return 0;
@@ -583,6 +1412,18 @@ std::wstring getIdFromEmail(SQLHANDLE hStmt, std::wstring employeeEmail) {
 	return idString;
 }
 
+std::wstring getEmployeeNameFromID(SQLHANDLE hStmt, std::wstring employeeID)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
+
+	std::wstring query = L"SELECT [Employee_Name] FROM [Employees] WHERE Employee_ID = ?";
+	SQLRETURN Result = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+	std::wstring employeeName = getResult(hStmt);
+	return employeeName;
+}
+
 std::wstring getLocationFromID(SQLHANDLE hStmt, std::wstring locationID) {
 	/*
 		This function takes the statement handle and location ID and returns the name of the location from the database.
@@ -627,10 +1468,55 @@ std::wstring getLocationIDFromName(SQLHANDLE hStmt, std::wstring locationName) {
 
 }
 
-std::wstring getModelIdFromName(SQLHANDLE hStmt, std::wstring deviceName)
-{
+std::wstring getModelIdFromDeviceName(SQLHANDLE hStmt, std::wstring deviceName)
+{	
+	//Binding deviceNumber to the first parameter
 	SQLLEN strlen = SQL_NTS;
 	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceName.c_str(), 0, &strlen);
+
+	std::wstring query = L"SELECT [Device_Model_ID] FROM [Computers] WHERE Computer_Name = ?";
+	SQLRETURN queryResult = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+
+	if (getResult(hStmt, 1, 1, false) != L"")
+	{
+		return getResult(hStmt);
+	}
+
+	SQLCloseCursor(hStmt);
+	query = L"SELECT [Device_Model_ID] FROM [Peripherals] WHERE Peripheral_Name = ?";
+	queryResult = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+	if (getResult(hStmt, 1, 1, false) != L"")
+	{
+		return getResult(hStmt);
+	}
+
+	SQLCloseCursor(hStmt);
+	query = L"SELECT [Device_Model_ID] FROM [Hotspots] WHERE Phone_Number = ?";
+	queryResult = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+	if (getResult(hStmt, 1, 1, false) != L"")
+	{
+		return getResult(hStmt);
+	}
+
+	SQLCloseCursor(hStmt);
+	query = L"SELECT [Device_Model_ID] FROM [Office_Equipment] WHERE Equipment_Name = ?";
+	queryResult = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+	if (getResult(hStmt, 1, 1, false) != L"")
+	{
+		return getResult(hStmt);
+	}
+
+	return L"";
+}
+
+std::wstring getModelIdFromModelName(SQLHANDLE hStmt, std::wstring modelName)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)modelName.c_str(), 0, &strlen);
 
 	std::wstring getModelIdQuery = L"SELECT TOP (1) [Device_Model_ID] FROM [Device_Models] WHERE Device_Model_Name = ?";
 	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)getModelIdQuery.c_str(), SQL_NTS);
@@ -642,8 +1528,36 @@ std::wstring getModelIdFromName(SQLHANDLE hStmt, std::wstring deviceName)
 std::wstring getResult(SQLHANDLE hStmt, int column, int row, bool lastResult)
 {
 	std::vector<std::wstring> getResultVector = getResultRow(hStmt, row, lastResult);
-	
-	return getResultVector[column-1];
+	std::vector<std::wstring> emptyString;
+	if (getResultVector.size() == 0)
+	{
+		return L"";
+	}
+	std::wstring getResultString = getResultVector[column - 1];
+	return getResultString;
+}
+
+std::wstring getDeviceTypeFromModelId(SQLHANDLE hStmt, std::wstring deviceModelId)
+{
+
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+
+	std::wstring query = L"SELECT [Device_Model_Type] FROM [Device_Models] WHERE [Device_Model_ID] = " + deviceModelId;
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+	return getResult(hStmt);
+}
+
+std::wstring getDeviceTableFromModelId(SQLHANDLE hStmt, std::wstring deviceModelId)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceModelId.c_str(), 0, &strlen);
+
+	std::wstring query = L"SELECT [Device_Model_Table] FROM [Device_Models] WHERE [Device_Model_ID] = " + deviceModelId;
+	SQLRETURN statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
+
+	return getResult(hStmt);
 }
 
 std::vector<std::wstring> getResultRow(SQLHANDLE hStmt, int row, bool lastResult) 
@@ -656,8 +1570,14 @@ std::vector<std::wstring> getResultRow(SQLHANDLE hStmt, int row, bool lastResult
 	*/
 
 	// Get size the size needed for the result vector
-	short numColumns;
+	short numColumns = -1;
 	SQLNumResultCols(hStmt, &numColumns);
+
+	if (numColumns < 1)
+	{
+		std::vector<std::wstring> emptyVector;
+		return emptyVector;
+	}
 
 	// Declare and resize the result vector an dlength vector
 	std::vector<std::wstring> getResultVector;
@@ -736,12 +1656,9 @@ std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstr
 	SQLLEN strlen = SQL_NTS;
 	SQLRETURN statementResult;
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultCountString.c_str(), SQL_NTS);
-
 	std::wstring resultCountStr = getResult(hStmt, 1);
 
 	wchar_t* resultCountStrEnd;
-
-	int resultCountStringSize = resultCountStr.size();
 
 	int resultCount = wcstol((wchar_t*)resultCountStr.c_str(), &resultCountStrEnd, 10);
 
@@ -760,7 +1677,7 @@ std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstr
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)resultStringQuery.c_str(), SQL_NTS);
 
 	std::vector<std::wstring> results;
-	std::wstring nextResult;
+	std::wstring nextResult = L"";
 
 	for (int i=0;i<resultCount;i++)
 	{
@@ -774,10 +1691,102 @@ std::vector<std::wstring> getColumn (SQLHANDLE hStmt, bool isDistinct, std::wstr
 		nextResult = getResult(hStmt, 1, i+1, lastResult);
 		results.push_back(nextResult);
 	}
+	return results;
+}
 
+std::wstring getResultColumnName(SQLHANDLE hStmt, int column)
+{		
+
+	std::wstring getColumnString;
+	short outputBuffer = 64;
+	getColumnString.resize(outputBuffer);
+	short nameLength;
+	short dataType;
+	unsigned long long columnSize;
+	short decimalDigits;
+	short nullable;
+	SQLLEN numAttr = 0;
+
+
+
+	SQLDescribeCol(hStmt, column, (wchar_t*)getColumnString.c_str(), outputBuffer, &nameLength, &dataType, &columnSize, &decimalDigits, &nullable);
+
+	getColumnString.resize(nameLength);
+
+	return getColumnString;
+}
+
+std::vector<std::wstring> getAllResultColumnNames(SQLHANDLE hStmt)
+{
+
+
+	// Get size the size needed for the result vector
+	short numColumns;
+	SQLNumResultCols(hStmt, &numColumns);
+
+	std::vector<std::wstring> columnNames;
+
+	for (int i=1;i < numColumns+1; i++)
+	{
+		columnNames.push_back(getResultColumnName(hStmt, i));
+	}
+
+	return columnNames;
+}
+
+int recordDeviceTransaction(SQLHANDLE hStmt, std::wstring deviceName, std::wstring transactionType, std::wstring employee)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)deviceName.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)transactionType.c_str(), 0, &strlen);
+	SQLRETURN bindResult3 = SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employee.c_str(), 0, &strlen);
+
+	std::wstring newDeviceTransaction;
+
+	if (employee == L"")
+	{
+		newDeviceTransaction = L"INSERT INTO Device_Transactions (Device_Name, Transaction_Type, Employee) VALUES (?, ?, NULL)";
+	}
+	else 
+	{
+		newDeviceTransaction = L"INSERT INTO Device_Transactions (Device_Name, Transaction_Type, Employee) VALUES (?, ?, ?)";
+	}
 	
 
-	return results;
+	//Execute 
+	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)newDeviceTransaction.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	return 0;
+}
+
+int recordEmployeeTransaction(SQLHANDLE hStmt, std::wstring transactionType, std::wstring employee)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)transactionType.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employee.c_str(), 0, &strlen);
+
+	std::wstring newEmployeeTransaction;
+
+	newEmployeeTransaction = L"INSERT INTO Employee_Transactions (Transaction_Type, Employee) VALUES (?, ?)";
+
+	//Execute 
+	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)newEmployeeTransaction.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+
+	return 0;
 }
 
 void enterKey() {
