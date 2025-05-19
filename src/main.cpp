@@ -910,9 +910,6 @@ int main()
 				bool isInHotspots = checkValid(hStmt, L"[Hotspots]", L"[IMEI_Number]", L"IMEI_Number", deviceNumber);
 				bool isInEquipment = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
 
-
-				
-
 				//Confirm delete
 
 				std::wstring confirmChoice = L"0";
@@ -966,7 +963,8 @@ int main()
 
 		case '7':
 		{
-			recordDeviceTransaction(hStmt, L"Test_Device", L"1", L"");
+			int retcode = recordEmployeeTransaction( hStmt, L"1", L"Test Person");
+			break;
 		}
 
 		// Prints the last entered device

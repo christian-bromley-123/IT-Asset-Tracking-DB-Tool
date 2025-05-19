@@ -944,6 +944,7 @@ int addEmployee(SQLHSTMT hStmt, std::wstring employeeName, std::wstring employee
 
 	if (isValid && (retcode == 0 || retcode == 1)) 
 	{
+		int transactionRetCode = recordEmployeeTransaction(hStmt, L"1", employeeName);
 		return 0;
 	}
 	else 
@@ -962,9 +963,8 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 		PAUSE ON ERROR
 
 	*/
-
+	std::wstring employeeName = getEmployeeNameFromID(hStmt, employeeID);
 	SQLLEN strlen = SQL_NTS;
-
 	// Rebind after while loop (parameter is not allowed out of scope)
 	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
 
@@ -982,7 +982,6 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 	unassignAllDevices = L"UPDATE [Office_Equipment] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 	
-
 	// Finally, remove the employee
 	std::wstring removeEmpQuery = L"DELETE FROM [Employees] WHERE Employee_ID = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)removeEmpQuery.c_str(), SQL_NTS);
@@ -991,6 +990,7 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 
 	if (!isValid && (statementResult != -1 && statementResult != 100))
 	{
+		int transactionRetCode = recordEmployeeTransaction(hStmt, L"2", employeeName);
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return 0;
 	}
@@ -1761,7 +1761,30 @@ int recordDeviceTransaction(SQLHANDLE hStmt, std::wstring deviceName, std::wstri
 		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 		return -1;
 	}
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
+	return 0;
+}
+
+int recordEmployeeTransaction(SQLHANDLE hStmt, std::wstring transactionType, std::wstring employee)
+{
+	SQLLEN strlen = SQL_NTS;
+	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)transactionType.c_str(), 0, &strlen);
+	SQLRETURN bindResult2 = SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employee.c_str(), 0, &strlen);
+
+	std::wstring newEmployeeTransaction;
+
+	newEmployeeTransaction = L"INSERT INTO Employee_Transactions (Transaction_Type, Employee) VALUES (?, ?)";
+
+	//Execute 
+	SQLRETURN result = SQLExecDirect(hStmt, (wchar_t*)newEmployeeTransaction.c_str(), SQL_NTS);
+
+	if (result != 0 && result != 1)
+	{
+		SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
+		return -1;
+	}
+	SQLFreeStmt(hStmt, SQL_RESET_PARAMS);
 
 	return 0;
 }

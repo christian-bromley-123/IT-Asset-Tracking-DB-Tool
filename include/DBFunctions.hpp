@@ -68,5 +68,6 @@ std::vector<std::wstring>   getColumn(SQLHANDLE hStmt, bool isDistinct, std::wst
 std::wstring                getDeviceTypeFromModelId(SQLHANDLE hStmt, std::wstring deviceModelId);
 std::wstring                getDeviceTableFromModelId(SQLHANDLE hStmt, std::wstring deviceModelId);
 int                         recordDeviceTransaction(SQLHANDLE hStmt, std::wstring deviceName, std::wstring transactionType, std::wstring employee = L"");
+int                         recordEmployeeTransaction(SQLHANDLE hStmt, std::wstring transactionType, std::wstring employee);
 bool                        checkValid(SQLHANDLE handle, std::wstring table, std::wstring column, std::wstring param, std::wstring target);
 bool                        isValidDate(std::wstring date);
