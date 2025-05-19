@@ -969,19 +969,48 @@ int removeEmployee(SQLHSTMT hStmt, std::wstring employeeID)
 	SQLRETURN bindResult1 = SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WCHAR, 100, 0, (wchar_t*)employeeID.c_str(), 0, &strlen);
 
 	// Unassign devices
-	std::wstring unassignAllDevices = L"UPDATE [Computers] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	std::wstring unassignAllDevices = L"SELECT [Computer_Name] FROM [Computers] WHERE Currently_Issued_to = ?";
 	SQLRETURN statementResult;
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 
-	unassignAllDevices = L"UPDATE [Peripherals] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	std::wstring computerName = getResult(hStmt);
+
+	if (computerName != L"")
+	{
+		int unassignRetCode = unassignComputer(hStmt, computerName);
+	}
+
+
+	unassignAllDevices = L"SELECT [Peripheral_Name] FROM [Peripherals] WHERE Currently_Issued_to = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 
-	unassignAllDevices = L"UPDATE [Hotspots] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	std::wstring peripheralName = getResult(hStmt);
+
+	if (peripheralName != L"")
+	{
+		int unassignRetCode = unassignPeripheral(hStmt, peripheralName);
+	}
+
+	unassignAllDevices = L"SELECT [IMEI] FROM [Hotspots] WHERE Currently_Issued_to = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 
-	unassignAllDevices = L"UPDATE [Office_Equipment] SET Currently_Issued_to = NULL WHERE Currently_Issued_to = ?";
+	std::wstring hotspotIMEI = getResult(hStmt);
+
+	if (peripheralName != L"")
+	{
+		int unassignRetCode = unassignHotspot(hStmt, hotspotIMEI);
+	}
+
+	unassignAllDevices = L"SELECT [Eqipment_Name] FROM [Office_Equipment] WHERE Currently_Issued_to = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)unassignAllDevices.c_str(), SQL_NTS);
 	
+	std::wstring equipmentName = getResult(hStmt);
+
+	if (peripheralName != L"")
+	{
+		int unassignRetCode = unassignEquipment(hStmt, equipmentName);
+	}
+
 	// Finally, remove the employee
 	std::wstring removeEmpQuery = L"DELETE FROM [Employees] WHERE Employee_ID = ?";
 	statementResult = SQLExecDirect(hStmt, (SQLWCHAR*)removeEmpQuery.c_str(), SQL_NTS);

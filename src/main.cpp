@@ -963,7 +963,7 @@ int main()
 
 		case '7':
 		{
-			int retcode = recordEmployeeTransaction( hStmt, L"1", L"Test Person");
+			int retcode = removeEmployee(hStmt, L"493");
 			break;
 		}
 
