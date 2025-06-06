@@ -136,7 +136,7 @@ int main()
 
 					else if (deviceTable == L"Hotspots")
 					{
-						isValid = checkValid(hStmt, L"[Hotspots]", L"[Phone_Number]", L"Phone_Number", deviceNumber);
+						isValid = checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
 					}
 
 					else
@@ -298,7 +298,7 @@ int main()
 
 				else if (deviceTable == L"Hotspots")
 				{
-					isValid = checkValid(hStmt, L"[Hotspots]", L"[Phone_Number]", L"Phone_Number", deviceNumber);
+					isValid = checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
 				}
 
 				else 
@@ -450,7 +450,7 @@ int main()
 					std::wcout << std::endl << L"Please enter the computer's serial number:" << std::endl;
 					getline(std::wcin, serialNumber);
 					
-					std::wcout << std::endl << L"Please enter the date that the computer was purchased:" << std::endl;
+					std::wcout << std::endl << L"Please enter the date that the computer was purchased (MM/DD/YY):" << std::endl;
 					getline(std::wcin, datePurchased);
 
 					std::wcout << std::endl << L"Please enter the price that the computer was purchased for:" << std::endl;
@@ -907,7 +907,7 @@ int main()
 
 				bool isInComputers = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
 				bool isInPeripherals = checkValid(hStmt, L"[Peripherals]", L"[Peripheral_Name]", L"Peripheral_Name", deviceNumber);
-				bool isInHotspots = checkValid(hStmt, L"[Hotspots]", L"[IMEI_Number]", L"IMEI_Number", deviceNumber);
+				bool isInHotspots = checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
 				bool isInEquipment = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
 
 				//Confirm delete
@@ -963,7 +963,7 @@ int main()
 
 		case '7':
 		{
-			int retcode = removeEmployee(hStmt, L"493");
+			//int retcode = removeEmployee(hStmt, L"493");
 			break;
 		}
 

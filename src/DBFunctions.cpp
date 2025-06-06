@@ -1522,7 +1522,7 @@ std::wstring getModelIdFromDeviceName(SQLHANDLE hStmt, std::wstring deviceName)
 	}
 
 	SQLCloseCursor(hStmt);
-	query = L"SELECT [Device_Model_ID] FROM [Hotspots] WHERE Phone_Number = ?";
+	query = L"SELECT [Device_Model_ID] FROM [Hotspots] WHERE IMEI = ?";
 	queryResult = SQLExecDirect(hStmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
 
 	if (getResult(hStmt, 1, 1, false) != L"")
