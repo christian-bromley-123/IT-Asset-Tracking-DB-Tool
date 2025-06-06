@@ -50,7 +50,7 @@ std::vector<std::wstring> testAll(SQLHANDLE hStmt, bool isTestServer)
 
 	retcode = assignComputer(hStmt, L"TESTCOMPUTER123", L"testp@gmail.com", L"11/11/11", L"1");	// Valid
 	retcodeStringVector.push_back(testResult(retcode, 0) + L": assignComputer()");
-
+	
 	retcode = unassignComputer(hStmt, L"----------"); // invalid name
 	retcodeStringVector.push_back(testResult(retcode, -1) + L": unassignComputer() catches invalid device name");
 
