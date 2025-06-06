@@ -20,6 +20,8 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <dbfunctions.hpp>
+#include <tests.hpp>
 
 int main()
 {
@@ -48,13 +50,13 @@ int main()
 	SQLHSTMT hStmt = NULL;
 	//Get Connection string from config
 
-	int connectResult = connectDatabase(hEnv, hDbc, hStmt, dbChoice, isTestServer);
+	int connectResult = dbfunctions::connectDatabase(hEnv, hDbc, hStmt, dbChoice, isTestServer);
 
 	// End the program if the connection fails
 	if (connectResult != 0) 
 	{
 		std::cout << "ERROR: DATABSE COULD NOT CONNECT." << std::endl;
-		enterKey();
+		dbfunctions::enterKey();
 		return -1;
 	}
 
@@ -119,29 +121,29 @@ int main()
 					if (deviceNumber == L"q" || deviceNumber == L"Q") {
 						break;
 					}
-					deviceTable = getDeviceTableFromModelId(hStmt, getModelIdFromDeviceName(hStmt, deviceNumber));
+					deviceTable = dbfunctions::getDeviceTableFromModelId(hStmt, dbfunctions::getModelIdFromDeviceName(hStmt, deviceNumber));
 
 					bool isValid = false;
 
 					// Check if the device name is in the system
 					if (deviceTable == L"Computers")
 					{
-						isValid = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
+						isValid = dbfunctions::checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
 					}
 
 					else if (deviceTable == L"Peripherals")
 					{
-						isValid = checkValid(hStmt, L"[Peripherals]", L"[Peripherals_Name]", L"Peripherals_Name", deviceNumber);
+						isValid = dbfunctions::checkValid(hStmt, L"[Peripherals]", L"[Peripherals_Name]", L"Peripherals_Name", deviceNumber);
 					}
 
 					else if (deviceTable == L"Hotspots")
 					{
-						isValid = checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
+						isValid = dbfunctions::checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
 					}
 
 					else
 					{
-						isValid = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
+						isValid = dbfunctions::checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
 					}
 
 					if (isValid)
@@ -175,9 +177,9 @@ int main()
 					std::wcin.ignore(10000, '\n');
 
 					// Get employee ID from email
-					std::wstring employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
+					std::wstring employeeID = dbfunctions::getIdFromEmail(hStmt, employeeEmailAddress);
 
-					bool isValid = checkValid(hStmt, L"[Employees]", L"[Employee_Email]", L"Employee_ID", employeeID);
+					bool isValid = dbfunctions::checkValid(hStmt, L"[Employees]", L"[Employee_Email]", L"Employee_ID", employeeID);
 
 					if (isValid)
 					{
@@ -235,22 +237,22 @@ int main()
 				int retcode;
 				if (deviceTable == L"Computers")
 				{
-					retcode = assignComputer(hStmt, deviceNumber, employeeEmailAddress, issueDate, firstUser);
+					retcode = dbfunctions::assignComputer(hStmt, deviceNumber, employeeEmailAddress, issueDate, firstUser);
 				}
 
 				else if (deviceTable == L"Peripherals")
 				{
-					retcode = assignPeripheral(hStmt, deviceNumber, employeeEmailAddress, issueDate, firstUser);
+					retcode = dbfunctions::assignPeripheral(hStmt, deviceNumber, employeeEmailAddress, issueDate, firstUser);
 				}
 
 				else if (deviceTable == L"Hotspots")
 				{
-					retcode = assignHotspot(hStmt, deviceNumber, employeeEmailAddress, issueDate);
+					retcode = dbfunctions::assignHotspot(hStmt, deviceNumber, employeeEmailAddress, issueDate);
 				}
 
 				else
 				{
-					retcode = assignEquipment(hStmt, deviceNumber, employeeEmailAddress, issueDate);
+					retcode = dbfunctions::assignEquipment(hStmt, deviceNumber, employeeEmailAddress, issueDate);
 				}
 
 				if (retcode == 0) {
@@ -282,28 +284,28 @@ int main()
 				}
 
 				std::wstring deviceTable;
-				deviceTable = getDeviceTableFromModelId(hStmt, getModelIdFromDeviceName(hStmt, deviceNumber));
+				deviceTable = dbfunctions::getDeviceTableFromModelId(hStmt, dbfunctions::getModelIdFromDeviceName(hStmt, deviceNumber));
 
 				bool isValid = false;
 
 				if (deviceTable == L"Computers")
 				{
-					isValid = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
+					isValid = dbfunctions::checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
 				}
 
 				else if (deviceTable == L"Peripherals")
 				{
-					isValid = checkValid(hStmt, L"[Peripherals]", L"[Peripherals_Name]", L"Peripherals_Name", deviceNumber);
+					isValid = dbfunctions::checkValid(hStmt, L"[Peripherals]", L"[Peripherals_Name]", L"Peripherals_Name", deviceNumber);
 				}
 
 				else if (deviceTable == L"Hotspots")
 				{
-					isValid = checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
+					isValid = dbfunctions::checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
 				}
 
 				else 
 				{
-					isValid = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
+					isValid = dbfunctions::checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
 				}
 
 				if (isValid)
@@ -311,22 +313,22 @@ int main()
 					int retcode;
 					if (deviceTable == L"Computers")
 					{
-						retcode = unassignComputer(hStmt, deviceNumber);
+						retcode = dbfunctions::unassignComputer(hStmt, deviceNumber);
 					}
 
 					else if (deviceTable == L"Peripherals")
 					{
-						retcode = unassignPeripheral(hStmt, deviceNumber);
+						retcode = dbfunctions::unassignPeripheral(hStmt, deviceNumber);
 					}
 
 					else if (deviceTable == L"Hotspots")
 					{
-						retcode = unassignHotspot(hStmt, deviceNumber);
+						retcode = dbfunctions::unassignHotspot(hStmt, deviceNumber);
 					}
 
 					else
 					{
-						retcode = unassignEquipment(hStmt, deviceNumber);
+						retcode = dbfunctions::unassignEquipment(hStmt, deviceNumber);
 					}
 
 					if (retcode == 0) {
@@ -372,7 +374,7 @@ int main()
 
 						if (deviceType == L"h" || deviceType == L"H")
 						{
-							std::vector<std::wstring> deviceTypeList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Type]");
+							std::vector<std::wstring> deviceTypeList = dbfunctions::getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Type]");
 
 							// Print list of types to the user
 							std::wcout << std::endl << L"Device Types:" << std::endl;
@@ -386,12 +388,12 @@ int main()
 						else
 						{
 							// Check that the model type is valid
-							if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Type]", L"Device_Model_Type", deviceType))
+							if (dbfunctions::checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Type]", L"Device_Model_Type", deviceType))
 							{
 								typeFound = true;
 
 								std::vector<std::wstring> deviceModelList;
-								deviceModelList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", deviceType);
+								deviceModelList = dbfunctions::getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Type", deviceType);
 
 								// Print list of types to the user
 
@@ -413,7 +415,7 @@ int main()
 
 				else
 				{
-					if (checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Name", deviceModel))
+					if (dbfunctions::checkValid(hStmt, L"[Device_Models]", L"[Device_Model_Name]", L"Device_Model_Name", deviceModel))
 					{
 						modelFound = true;
 					}
@@ -426,7 +428,7 @@ int main()
 			}
 			
 			// Find Type from model ID
-			std::vector<std::wstring> deviceModelTableList = getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Table]", L"Device_Model_Name", deviceModel);
+			std::vector<std::wstring> deviceModelTableList = dbfunctions::getColumn(hStmt, 1, L"[Device_Models]", L"[Device_Model_Table]", L"Device_Model_Name", deviceModel);
 			std::wstring deviceModelTable = deviceModelTableList[0];
 
 			
@@ -485,8 +487,8 @@ int main()
 				}
 
 				//Run query and make sure it worked.
-				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
-				int newComputerRetCode = newComputer(hStmt, computerName, serialNumber, deviceModelId, datePurchased, cost, operatingSystem, isTestServer);
+				std::wstring deviceModelId = dbfunctions::getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = dbfunctions::newComputer(hStmt, computerName, serialNumber, deviceModelId, datePurchased, cost, operatingSystem, isTestServer);
 
 				if (newComputerRetCode == 0)
 				{
@@ -549,8 +551,8 @@ int main()
 				}
 
 				//Run query and make sure it worked.
-				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
-				int newComputerRetCode = newPeripheral(hStmt, peripheralName, serialNumber, deviceModelId, datePurchased, cost, isTestServer);
+				std::wstring deviceModelId = dbfunctions::getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = dbfunctions::newPeripheral(hStmt, peripheralName, serialNumber, deviceModelId, datePurchased, cost, isTestServer);
 
 				if (newComputerRetCode == 0)
 				{
@@ -612,8 +614,8 @@ int main()
 				}
 
 				//Run query and make sure it worked.
-				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
-				int newComputerRetCode = newHotspot(hStmt, phoneNumber, imeiNumber, deviceModelId, datePurchased, cost, isTestServer);
+				std::wstring deviceModelId = dbfunctions::getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = dbfunctions::newHotspot(hStmt, phoneNumber, imeiNumber, deviceModelId, datePurchased, cost, isTestServer);
 
 				if (newComputerRetCode == 0)
 				{
@@ -675,8 +677,8 @@ int main()
 				}
 
 				//Run query and make sure it worked.
-				std::wstring deviceModelId = getModelIdFromModelName(hStmt, deviceModel);
-				int newComputerRetCode = newEquipment(hStmt, equipmentName, serialNumber, deviceModelId, datePurchased, cost, isTestServer);
+				std::wstring deviceModelId = dbfunctions::getModelIdFromModelName(hStmt, deviceModel);
+				int newComputerRetCode = dbfunctions::newEquipment(hStmt, equipmentName, serialNumber, deviceModelId, datePurchased, cost, isTestServer);
 
 				if (newComputerRetCode == 0)
 				{
@@ -692,7 +694,7 @@ int main()
 			else
 			{
 				std::wcout << std::endl << L"An error occured when selecting a table to place the new device into. Please review the 'Device_Models' table in the database." << std::endl;
-				enterKey();
+				dbfunctions::enterKey();
 				return -1;
 			}
 
@@ -728,7 +730,7 @@ int main()
 					std::getline(std::wcin, employeeLocation);
 					
 					
-					employeeLocationID = getLocationIDFromName(hStmt, employeeLocation);
+					employeeLocationID = dbfunctions::getLocationIDFromName(hStmt, employeeLocation);
 
 					if (employeeLocationID == L"") {
 
@@ -784,7 +786,7 @@ int main()
 					std::cin >> yesOrNo;
 					if (yesOrNo == 'y' || yesOrNo == 'Y') {
 
-						int retcode = addEmployee(hStmt, employeeName, employeeTitle, employeeLocationID, employeeEmailAddress, employeePhoneNumber, employeeExtension);
+						int retcode = dbfunctions::addEmployee(hStmt, employeeName, employeeTitle, employeeLocationID, employeeEmailAddress, employeePhoneNumber, employeeExtension);
 
 						if (retcode == 0) 
 						{
@@ -828,7 +830,7 @@ int main()
 					break;
 				}
 				// First, get the Employee ID
-				std::wstring employeeID = getIdFromEmail(hStmt, employeeEmailAddress);
+				std::wstring employeeID = dbfunctions::getIdFromEmail(hStmt, employeeEmailAddress);
 
 				// Bind parameter
 				SQLLEN strlen = SQL_NTS;
@@ -838,17 +840,17 @@ int main()
 				std::wstring checkEmployee = L"SELECT TOP (1) [Employee_Email], [Employee_Name], [Employee_Title], [Location_ID] FROM [Employees] WHERE Employee_ID = ?";
 
 				SQLRETURN execResult1 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
-				std::wstring getEmail = getResult(hStmt, 1);
+				std::wstring getEmail = dbfunctions::getResult(hStmt, 1);
 
 				SQLRETURN execResult2 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
-				std::wstring getName = getResult(hStmt, 2);
+				std::wstring getName = dbfunctions::getResult(hStmt, 2);
 
 				SQLRETURN execResult3 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
-				std::wstring getTitle = getResult(hStmt, 3);
+				std::wstring getTitle = dbfunctions::getResult(hStmt, 3);
 
 				SQLRETURN execResult4 = SQLExecDirect(hStmt, (SQLWCHAR*)checkEmployee.c_str(), SQL_NTS);
-				std::wstring locationID = getResult(hStmt, 4);
-				std::wstring getLocation = getLocationFromID(hStmt, locationID);
+				std::wstring locationID = dbfunctions::getResult(hStmt, 4);
+				std::wstring getLocation = dbfunctions::getLocationFromID(hStmt, locationID);
 
 				if (getEmail == L"") {
 					std::wcout << L"\nError. There is no employee with the email address: '" << employeeEmailAddress << "'" << std::endl;
@@ -868,7 +870,7 @@ int main()
 					std::wcin >> confirmChoice;
 
 					if (confirmChoice == L'Y' or confirmChoice == L'y') {
-						int retcode = removeEmployee(hStmt, employeeID);
+						int retcode = dbfunctions::removeEmployee(hStmt, employeeID);
 
 						if (retcode == 0)
 						{
@@ -905,10 +907,10 @@ int main()
 
 				// Check all 4 device tables, branch accordingly
 
-				bool isInComputers = checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
-				bool isInPeripherals = checkValid(hStmt, L"[Peripherals]", L"[Peripheral_Name]", L"Peripheral_Name", deviceNumber);
-				bool isInHotspots = checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
-				bool isInEquipment = checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
+				bool isInComputers = dbfunctions::checkValid(hStmt, L"[Computers]", L"[Computer_Name]", L"Computer_Name", deviceNumber);
+				bool isInPeripherals = dbfunctions::checkValid(hStmt, L"[Peripherals]", L"[Peripheral_Name]", L"Peripheral_Name", deviceNumber);
+				bool isInHotspots = dbfunctions::checkValid(hStmt, L"[Hotspots]", L"[IMEI]", L"IMEI", deviceNumber);
+				bool isInEquipment = dbfunctions::checkValid(hStmt, L"[Office_Equipment]", L"[Equipment_Name]", L"Equipment_Name", deviceNumber);
 
 				//Confirm delete
 
@@ -922,22 +924,22 @@ int main()
 				if (confirmChoice == L"Y" or confirmChoice == L"y") {
 					if (isInComputers)
 					{
-						retcode = removeComputer(hStmt, deviceNumber);
+						retcode = dbfunctions::removeComputer(hStmt, deviceNumber);
 					}
 
 					else if (isInPeripherals)
 					{
-						retcode = removePeripheral(hStmt, deviceNumber);
+						retcode = dbfunctions::removePeripheral(hStmt, deviceNumber);
 					}
 
 					else if (isInHotspots)
 					{
-						retcode = removeHotspot(hStmt, deviceNumber);
+						retcode = dbfunctions::removeHotspot(hStmt, deviceNumber);
 					}
 
 					else if (isInEquipment)
 					{
-						retcode = removeEquipment(hStmt, deviceNumber);
+						retcode = dbfunctions::removeEquipment(hStmt, deviceNumber);
 					}
 
 					else
@@ -970,8 +972,8 @@ int main()
 		// Prints the last entered device
 		case '0':
 		{
-			readLastDevice();
-			enterKey();
+			dbfunctions::readLastDevice();
+			dbfunctions::enterKey();
 			break;
 		}
 
@@ -989,7 +991,7 @@ int main()
 		case 't':
 		{	
 			std::vector<std::wstring> retVector;
-			retVector = testAll(hStmt, isTestServer);
+			retVector = dbtests::testAll(hStmt, isTestServer);
 			std::wcout << std::endl << L"Test results:";
 
 			for (int i = 0; i<retVector.size();i++)
@@ -998,7 +1000,7 @@ int main()
 			}
 
 			std::wcout << std::endl;
-			enterKey();
+			dbfunctions::enterKey();
 			break;
 		}
 			
